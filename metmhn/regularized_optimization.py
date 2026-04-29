@@ -6,6 +6,7 @@ from jax import vmap
 import numpy as np
 import scipy.optimize as opt
 from typing import Callable
+from dataclasses import dataclass
 
 
 def L1(theta: jnp.ndarray, eps: float = 1e-05) -> jnp.ndarray:
@@ -27,6 +28,23 @@ def L1_(theta: jnp.ndarray, eps: float = 1e-05) -> jnp.ndarray:
         theta_ = theta_.at[jnp.diag_indices(theta.shape[0])].set(0.)
     return theta_.flatten() / jnp.sqrt(theta_.flatten()**2 + eps)
 
+def L2(theta: jnp.ndarray, eps: float = 1e-05) -> jnp.ndarray:
+    """
+    Computes the L2 norm
+    """
+    theta_ = theta.copy()
+    if theta.ndim == 2:
+        theta_ = theta_.at[jnp.diag_indices(theta.shape[0])].set(0.)
+    return jnp.sqrt(jnp.sum(theta_**2) + eps)
+
+def L2_(theta: jnp.ndarray, eps: float = 1e-05) -> jnp.ndarray:
+    """
+    Derivative of the L2 norm
+    """
+    theta_ = theta.copy()
+    if theta.ndim == 2:
+        theta_ = theta_.at[jnp.diag_indices(theta.shape[0])].set(0.)
+    return (theta_ / (jnp.sqrt(jnp.sum(theta_**2) + eps))).flatten()
 
 def sym_penal(log_theta: jnp.ndarray, eps: float = 1e-05) -> jnp.ndarray:
     n = log_theta.shape[0]
@@ -51,6 +69,86 @@ def symmetric_penal(params: np.array, n_total: int, eps=1e-05) -> tuple[jnp.ndar
     penal_ = np.concatenate((sym_penal_(log_theta), L1_(log_d_p), L1_(log_d_m)))
     return penal, penal_
 
+def symmetric_penal2(params: np.array, n_total: int, eps=1e-05):
+    log_theta = jnp.array(params[0:n_total**2]).reshape((n_total, n_total))
+    log_d_p = jnp.array(params[n_total**2:n_total*(n_total + 1)])
+    log_d_m = jnp.array(params[n_total*(n_total+1):])
+    
+    # remove last row + column
+    log_theta_sub = log_theta[:-1, :-1]
+
+    penal = np.array(sym_penal(log_theta_sub) + L1(log_d_p) + L1(log_d_m))
+
+    # compute gradient
+    grad_theta_sub = sym_penal_(log_theta_sub)
+    grad_theta_full = jnp.zeros_like(log_theta).flatten()
+    idx = jnp.arange((n_total - 1)**2)
+    grad_theta_full = grad_theta_full.at[idx].set(grad_theta_sub)
+
+    penal_ = np.concatenate((grad_theta_full, L1_(log_d_p), L1_(log_d_m)))
+
+    return penal, penal_
+
+def symmetric_penal4(params: np.array, n_total: int, eps=1e-05):
+    log_theta = jnp.array(params[0:n_total**2]).reshape((n_total, n_total))
+    log_d_p = jnp.array(params[n_total**2:n_total*(n_total + 1)])
+    log_d_m = jnp.array(params[n_total*(n_total+1):])
+    
+   # ---- split matrix ----
+    log_theta_core = log_theta[:-1, :-1]
+    log_theta_row  = log_theta[-1, :-1]   # last row
+    log_theta_col  = log_theta[:-1, -1]   # last column
+
+    # ---- penalties ----
+    penal_core = sym_penal(log_theta_core)
+    penal_row  = L1(log_theta_row)        # or custom function
+    penal_col  = L1(log_theta_col)
+
+    penal = np.array(penal_core + penal_row + penal_col + L1(log_d_p) + L1(log_d_m))
+
+    # ---- gradients ----
+    grad_theta = jnp.zeros_like(log_theta)
+
+    # core gradient
+    grad_core = sym_penal_(log_theta_core)
+    grad_theta = grad_theta.at[:-1, :-1].set(grad_core)
+
+    # row gradient (asymmetric)
+    grad_row = L1_(log_theta_row)
+    grad_theta = grad_theta.at[-1, :-1].set(grad_row)
+
+    # column gradient (asymmetric)
+    grad_col = L1_(log_theta_col)
+    grad_theta = grad_theta.at[:-1, -1].set(grad_col)
+
+    # flatten theta gradient
+    grad_theta_flat = grad_theta.flatten()
+
+    penal_ = np.concatenate((grad_theta_flat, L1_(log_d_p), L1_(log_d_m)))
+
+    return penal, penal_
+
+def symmetric_penal3(params: np.array, n_total: int, eps=1e-05):
+    log_theta = jnp.array(params[0:n_total**2]).reshape((n_total, n_total))
+    log_d_p = jnp.array(params[n_total**2:n_total*(n_total + 1)])
+    log_d_m = jnp.array(params[n_total*(n_total+1):])
+    
+    # remove last row + column
+    log_theta_sub = log_theta[:-1, :-1]
+
+    penal = np.array(sym_penal(log_theta_sub) + L2(log_d_p) + L2(log_d_m))
+
+    # compute gradient
+    grad_theta_sub = sym_penal_(log_theta_sub)
+    grad_theta_full = jnp.zeros_like(log_theta).flatten()
+    idx = jnp.arange((n_total - 1)**2)
+    grad_theta_full = grad_theta_full.at[idx].set(grad_theta_sub)
+
+    penal_ = np.concatenate((grad_theta_full, L2_(log_d_p), L2_(log_d_m)))
+
+    return penal, penal_
+
+###
 
 def score(log_theta: jnp.ndarray, log_d_p: jnp.ndarray, log_d_m: jnp.ndarray, dat: jnp.ndarray, 
           perc_met: float)-> jnp.ndarray:
@@ -161,7 +259,7 @@ def score_reg(params: np.ndarray, dat: jnp.ndarray, perc_met: float, penal: Call
 
 
 def score_and_grad(log_theta: jnp.ndarray, log_d_p: jnp.ndarray, log_d_m: jnp.ndarray, dat: jnp.ndarray, 
-                   perc_met: float)->tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+                   perc_met: float, fixed_grad: bool = False)->tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
     """Calculates the log. likelihood and its gradient of the dataset dat
 
     Args:
@@ -173,7 +271,8 @@ def score_and_grad(log_theta: jnp.ndarray, log_d_p: jnp.ndarray, log_d_m: jnp.nd
             (0: unknown, 1: First PT then MT, 2: First MT then PT) and the last column indicates the type of the datapoint 
             (0: PT only, no MT observed, 1: PT only, MT recorded but not sequenced, 2: MT, No PT sequenced, 3: PT and MT sequenced)
         perc_met (float): Expected percentage of metastasizing tumor in the Dataset.
-    
+        fixed_grad (bool): Whether to fix the gradient to 0 for the d_p and d_m.
+
     Returns:
         tuple[np.array, jnp.ndarray, jnp.ndarray, jnp.ndarray]: Log. likelihood, grad wrt. theta, grad wrt. log_d_p, grad wrt. log_d_m
     """
@@ -264,11 +363,16 @@ def score_and_grad(log_theta: jnp.ndarray, log_d_p: jnp.ndarray, log_d_m: jnp.nd
     d_th = (w*d_th + d_th_pt)/n_full
     d_d_p = (w*d_d_p + d_d_p_pt)/n_full
     d_d_m = w*d_d_m/n_full
+
+    if fixed_grad:
+        d_d_p = d_d_p.at[-1].set(0.0)
+        d_d_m = d_d_m.at[-1].set(0.0)
+
     return score, d_th, d_d_p, d_d_m
 
 
 def score_and_grad_reg(params: np.ndarray, dat: jnp.ndarray, perc_met: float, penal: Callable[[np.ndarray, int], tuple[np.ndarray, np.ndarray]], 
-                       w_penal: float) -> tuple[np.ndarray, np.ndarray]:
+                       w_penal: float, fixed_grad: bool = False) -> tuple[np.ndarray, np.ndarray]:
     """Calculates the negative log. likelihood and its gradient of the dataset dat with regularization penal
 
     Args:
@@ -282,6 +386,7 @@ def score_and_grad_reg(params: np.ndarray, dat: jnp.ndarray, perc_met: float, pe
         penal (Callable[[np.ndarray, int], tuple[np.ndarray, np.ndarray]]): Penalty function, should take parametervector params and totoal number of events as input and 
             return the value of the penality and the gradient of it wrt. to all model parameters
         w_penal (float): weight of the penalization
+        fixed_grad (bool): Whether to fix the gradient to 0 for the d_p and d_m.
 
     Returns:
         tuple[np.ndarray, np.ndarray]: Negative penalized log. likelihood, grad wrt. to all model parameters
@@ -292,14 +397,14 @@ def score_and_grad_reg(params: np.ndarray, dat: jnp.ndarray, perc_met: float, pe
     log_theta = jnp.array(params[0:n_total**2]).reshape((n_total, n_total))
     log_d_p = jnp.array(params[n_total**2:n_total*(n_total + 1)])
     log_d_m = jnp.array(params[n_total*(n_total+1):])
-    score, d_th, d_d_p, d_d_m = score_and_grad(log_theta, log_d_p, log_d_m, dat, perc_met)
+    score, d_th, d_d_p, d_d_m = score_and_grad(log_theta, log_d_p, log_d_m, dat, perc_met, fixed_grad)
     grad_vec = np.concatenate((d_th.flatten(), d_d_p, d_d_m))
     pen, pen_ = penal(params, n_total)
     return np.array(-score + w_penal*pen), -grad_vec + w_penal*pen_ 
 
 
 def learn_mhn(th_init: jnp.ndarray, dp_init: jnp.ndarray, dm_init: jnp.ndarray, dat: jnp.ndarray, perc_met: float, 
-              penal: Callable[[np.ndarray, int], tuple[np.ndarray, np.ndarray]], w_penal: float, opt_iter: int=1e05, opt_ftol: float=1e-04, 
+              penal: Callable[[np.ndarray, int], tuple[np.ndarray, np.ndarray]], w_penal: float, fixed_grad: bool = False, opt_iter: int=1e05, opt_ftol: float=1e-04, 
               opt_v: bool=True) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
     """ Infer a metMHN from data
 
@@ -315,6 +420,7 @@ def learn_mhn(th_init: jnp.ndarray, dp_init: jnp.ndarray, dm_init: jnp.ndarray, 
         penal (Callable[[np.ndarray, int], tuple[np.ndarray, np.ndarray]]): Penalty function, should take parametervector params and totoal number of events as input and 
             return the value of the penality and the gradient of it wrt. to all model parameters
         penal (float): Weight of the penalty
+        fixed_grad (bool): Whether to fix the gradient to 0 for the d_p and d_m.
         opt_iter (int): Maximal number of iterations for optimizer. Defaults to 1e05
         opt_ftol (float): Tolerance for optimizer. Defaults to 1e-04
         opt_v (bool):  Print out optimizer progress. Defaults to TRUE
@@ -326,7 +432,7 @@ def learn_mhn(th_init: jnp.ndarray, dp_init: jnp.ndarray, dm_init: jnp.ndarray, 
     n_total = th_init.shape[0]
     start_params = np.concatenate((th_init.flatten(), dp_init, dm_init))
     x = opt.minimize(fun=score_and_grad_reg, jac=True, x0=start_params, method="L-BFGS-B",  
-                     args=(dat, perc_met, penal, w_penal), 
+                     args=(dat, perc_met, penal, w_penal, fixed_grad), 
                      options={"maxiter":opt_iter, "disp": opt_v, "ftol": opt_ftol})
     theta = jnp.array(x.x[:n_total**2]).reshape((n_total, n_total))
     d_p = jnp.array(x.x[n_total**2:n_total*(n_total+1)])
