@@ -1,0 +1,9 @@
+/var/spool/slurm/slurmd/state/job64416237/slurm_script: 9: module: not found
+/var/spool/slurm/slurmd/state/job64416237/slurm_script: 10: module: not found
+/var/spool/slurm/slurmd/state/job64416237/slurm_script: 11: module: not found
+/var/spool/slurm/slurmd/state/job64416237/slurm_script: 12: module: not found
+/var/spool/slurm/slurmd/state/job64416237/slurm_script: 13: module: not found
+/var/spool/slurm/slurmd/state/job64416237/slurm_script: 15: source: not found
+An NVIDIA GPU may be present on this machine, but a CUDA-enabled jaxlib is not installed. Falling back to cpu.
+/cluster/home/mauwidmer/metMHN/slurm/../tests/test_penalty3_1.py:100: DeprecationWarning: `row_stack` alias is deprecated. Use `np.vstack` directly.
+  th_plot = np.row_stack((d_p.reshape((1,-1)),
