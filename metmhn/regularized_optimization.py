@@ -89,6 +89,26 @@ def symmetric_penal2(params: np.array, n_total: int, eps=1e-05):
 
     return penal, penal_
 
+def symmetric_penal3(params: np.array, n_total: int, eps=1e-05):
+    log_theta = jnp.array(params[0:n_total**2]).reshape((n_total, n_total))
+    log_d_p = jnp.array(params[n_total**2:n_total*(n_total + 1)])
+    log_d_m = jnp.array(params[n_total*(n_total+1):])
+    
+    # remove last row + column
+    log_theta_sub = log_theta[:-1, :-1]
+
+    penal = np.array(sym_penal(log_theta_sub) + L2(log_d_p) + L2(log_d_m))
+
+    # compute gradient
+    grad_theta_sub = sym_penal_(log_theta_sub)
+    grad_theta_full = jnp.zeros_like(log_theta).flatten()
+    idx = jnp.arange((n_total - 1)**2)
+    grad_theta_full = grad_theta_full.at[idx].set(grad_theta_sub)
+
+    penal_ = np.concatenate((grad_theta_full, L2_(log_d_p), L2_(log_d_m)))
+
+    return penal, penal_
+
 def symmetric_penal4(params: np.array, n_total: int, eps=1e-05):
     log_theta = jnp.array(params[0:n_total**2]).reshape((n_total, n_total))
     log_d_p = jnp.array(params[n_total**2:n_total*(n_total + 1)])
@@ -128,27 +148,122 @@ def symmetric_penal4(params: np.array, n_total: int, eps=1e-05):
 
     return penal, penal_
 
-def symmetric_penal3(params: np.array, n_total: int, eps=1e-05):
-    log_theta = jnp.array(params[0:n_total**2]).reshape((n_total, n_total))
-    log_d_p = jnp.array(params[n_total**2:n_total*(n_total + 1)])
-    log_d_m = jnp.array(params[n_total*(n_total+1):])
+@dataclass
+class theta_extended:
+    """
+    this class stores and manages the data used to reparametrize the theta matrix.
+
+    Attributes
+    ----------
+    log_theta : np.ndarray
+        An n x n matrix representing the original theta matrix.
+    omega_m : np.ndarray
+        observation parameters for metastasis.
+    omega_p : np.ndarray
+        observation parameters for primary tumours.
+    theta_loc_GM : np.ndarray
+        parameters for CNS GM transitions.
+    theta_loc_MG : np.ndarray
+        parameters for CNS MG transitions.
+    """
+
+    log_theta: jnp.ndarray
+    omega_m: jnp.ndarray
+    omega_p: jnp.ndarray
+    theta_loc_GM: jnp.ndarray
+    theta_loc_MG: jnp.ndarray
+
+def create_theta_extended(
+        log_theta: jnp.ndarray,
+        omega_m: jnp.ndarray, 
+        omega_p: jnp.ndarray,
+        theta_loc_GM: jnp.ndarray,
+        theta_loc_MG: jnp.ndarray
+        ) -> theta_extended:
+
+        # --- Validation ---
+        n = log_theta.shape[0]
+
+        if log_theta.shape[0] != log_theta.shape[1]:
+            raise ValueError("matrix must be square (n x n)")
+
+        for vec, name in zip(
+            [omega_m, omega_p],
+            ["omega_m", "omega_p"]
+        ):
+            if vec.shape[0] != n:
+                raise ValueError(f"{name} must have size {n}")
+        
+        if theta_loc_GM.shape[0] != n:
+            raise ValueError(f"theta_loc_GM must have size {n}")
+        
+        if theta_loc_MG.shape[0] != n:
+            raise ValueError(f"theta_loc_MG must have size {n}")
+        
+        if theta_loc_GM.shape[1] != theta_loc_MG.shape[1]:
+            raise ValueError("theta_loc_GM and theta_loc_MG must have the same number of columns")
+        
+        return theta_extended(
+            log_theta=log_theta,
+            omega_m=omega_m,
+            omega_p=omega_p,
+            theta_loc_GM=theta_loc_GM,
+            theta_loc_MG=theta_loc_MG
+        )
+
+def composite_penalty(theta_extended: theta_extended, lam: float) -> jnp.ndarray:
+    """
+    Compute the composite penalty for the model parameters theta.
+
+    Args:
+        theta_extended (theta_extended): An instance of the theta_extended class containing the log_theta and additional data.
+        lam (float): Lambda tuning parameter for the composite penalty.
+
+    Returns:
+        jnp.ndarray: penalty term for composite log-theta matrix.
+    """
+    n = theta_extended.log_theta.shape[0]
+
+    # --- composite penalty ---
+    theta = theta_extended.log_theta[:-1, :-1]
+    theta_met_nj_loc = theta_extended.log_theta[-1, :-1] * theta_extended.theta_loc_GM
+    theta_met_in_loc = theta_extended.log_theta[:-1, -1] * theta_extended.theta_loc_MG
+
+    composite_penalty = (lam * (L1(theta) + L1(theta_met_nj_loc) + L1(theta_met_in_loc) +
+                              L1(theta_extended.omega_m) + L1(theta_extended.omega_p))
+                       + (1 - lam) * (L1(theta_extended.theta_loc_GM @ theta_extended.theta_loc_GM.T) +
+                                      L1(theta_extended.theta_loc_MG @ theta_extended.theta_loc_MG.T)))
     
-    # remove last row + column
-    log_theta_sub = log_theta[:-1, :-1]
+    return composite_penalty
 
-    penal = np.array(sym_penal(log_theta_sub) + L2(log_d_p) + L2(log_d_m))
+def composite_penalty_(theta_extended: theta_extended, lam: float) -> jnp.ndarray:
+    """
+    Compute the gradient of the composite penalty with respect to the log_theta matrix.
 
-    # compute gradient
-    grad_theta_sub = sym_penal_(log_theta_sub)
-    grad_theta_full = jnp.zeros_like(log_theta).flatten()
-    idx = jnp.arange((n_total - 1)**2)
-    grad_theta_full = grad_theta_full.at[idx].set(grad_theta_sub)
+    Args:
+        theta_extended (theta_extended): An instance of the theta_extended class containing the log_theta and additional data for reparametrization.
+        lam (float): Lambda parameter for reparametrization.
 
-    penal_ = np.concatenate((grad_theta_full, L2_(log_d_p), L2_(log_d_m)))
+    Returns:
+        jnp.ndarray: Gradient of the penalty term with respect to the log_theta matrix.
+    """
+    n = theta_extended.log_theta.shape[0]
 
-    return penal, penal_
+    # --- composite penalty gradient ---
+    theta = theta_extended.log_theta[:-1, :-1]
+    theta_met_nj_loc = theta_extended.log_theta[-1, :-1] * theta_extended.theta_loc_GM
+    theta_met_in_loc = theta_extended.log_theta[:-1, -1] * theta_extended.theta_loc_MG
 
-###
+    grad_theta_main = L1_(theta).reshape(theta.shape)
+    grad_last_row = jnp.sum(L1_(theta_met_nj_loc).reshape(theta_met_nj_loc.shape) * theta_extended.theta_loc_GM, axis=0)
+    grad_last_col = jnp.sum(L1_(theta_met_in_loc).reshape(theta_met_in_loc.shape) * theta_extended.theta_loc_MG, axis=0)
+
+    grad_full = jnp.zeros_like(theta_extended.log_theta)
+    grad_full = grad_full.at[:-1, :-1].set(lam * grad_theta_main)
+    grad_full = grad_full.at[-1, :-1].set(lam * grad_last_row)
+    grad_full = grad_full.at[:-1, -1].set(lam * grad_last_col)
+
+    return grad_full.flatten()
 
 def score(log_theta: jnp.ndarray, log_d_p: jnp.ndarray, log_d_m: jnp.ndarray, dat: jnp.ndarray, 
           perc_met: float)-> jnp.ndarray:
