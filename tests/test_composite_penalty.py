@@ -13,18 +13,24 @@ class TestCompositePenaltyGradient(unittest.TestCase):
         rng = np.random.default_rng(seed=42)
 
         log_theta = jnp.array(rng.normal(size=(n, n)))
-        theta_loc_GM = jnp.array(rng.normal(size=(n, n_loc)))
-        theta_loc_MG = jnp.array(rng.normal(size=(n, n_loc)))
-        omega_m = jnp.array(rng.normal(size=(n,)))
-        omega_p = jnp.array(rng.normal(size=(n,)))
+        theta_loc_gm = jnp.array(rng.normal(size=(n, n_loc)))
+        theta_loc_mg = jnp.array(rng.normal(size=(n, n_loc)))
+        omega_m = jnp.array(rng.normal(size=(n + 1, n_loc)))
+        omega_g = jnp.array(rng.normal(size=(n,)))
+        theta_met_br = jnp.array(rng.normal(size=(n_loc,)))
+        theta_gm = jnp.array(rng.normal(size=(n,)))
+        theta_mg = jnp.array(rng.normal(size=(n,)))
         c = jnp.array(rng.uniform(0, 1, size=(n_loc,)))
 
         theta_ext = reg_opt.create_theta_extended(
-            log_theta=log_theta,
+            theta_g=log_theta,
+            theta_met_br=theta_met_br,
+            theta_gm=theta_gm,
+            theta_mg=theta_mg,
             omega_m=omega_m,
-            omega_p=omega_p,
-            theta_loc_GM=theta_loc_GM,
-            theta_loc_MG=theta_loc_MG,
+            omega_g=omega_g,
+            theta_loc_gm=theta_loc_gm,
+            theta_loc_mg=theta_loc_mg,
         )
 
         lam = 0.7
@@ -38,11 +44,14 @@ class TestCompositePenaltyGradient(unittest.TestCase):
             j = idx % n
             log_theta_h = log_theta.at[i, j].add(h)
             theta_ext_h = reg_opt.create_theta_extended(
-                log_theta=log_theta_h,
+                theta_g=log_theta_h,
+                theta_met_br=theta_met_br,
+                theta_gm=theta_gm,
+                theta_mg=theta_mg,
                 omega_m=omega_m,
-                omega_p=omega_p,
-                theta_loc_GM=theta_loc_GM,
-                theta_loc_MG=theta_loc_MG,
+                omega_g=omega_g,
+                theta_loc_gm=theta_loc_gm,
+                theta_loc_mg=theta_loc_mg,
             )
             penalty_h = float(reg_opt.composite_penalty(theta_ext_h, lam, c))
             grad_numerical[idx] = (penalty_h - penalty) / h
@@ -60,17 +69,23 @@ class TestCompositePenaltyGradient(unittest.TestCase):
         rng = np.random.default_rng(seed=24)
 
         log_theta = jnp.array(rng.normal(size=(n, n)))
-        theta_loc_GM = jnp.array(rng.normal(size=(n, n_loc)))
-        theta_loc_MG = jnp.array(rng.normal(size=(n, n_loc)))
-        omega_m = jnp.array(rng.normal(size=(n,)))
-        omega_p = jnp.array(rng.normal(size=(n,)))
+        theta_loc_gm = jnp.array(rng.normal(size=(n, n_loc)))
+        theta_loc_mg = jnp.array(rng.normal(size=(n, n_loc)))
+        omega_m = jnp.array(rng.normal(size=(n + 1, n_loc)))
+        omega_g = jnp.array(rng.normal(size=(n,)))
+        theta_met_br = jnp.array(rng.normal(size=(n_loc,)))
+        theta_gm = jnp.array(rng.normal(size=(n,)))
+        theta_mg = jnp.array(rng.normal(size=(n,)))
 
         theta_ext = reg_opt.create_theta_extended(
-            log_theta=log_theta,
+            theta_g=log_theta,
+            theta_met_br=theta_met_br,
+            theta_gm=theta_gm,
+            theta_mg=theta_mg,
             omega_m=omega_m,
-            omega_p=omega_p,
-            theta_loc_GM=theta_loc_GM,
-            theta_loc_MG=theta_loc_MG,
+            omega_g=omega_g,
+            theta_loc_gm=theta_loc_gm,
+            theta_loc_mg=theta_loc_mg,
         )
 
         theta_rep = reg_opt.reparametrization(theta_ext)
@@ -80,11 +95,11 @@ class TestCompositePenaltyGradient(unittest.TestCase):
             np.testing.assert_allclose(theta_rep[loc_idx, :-1, :-1], log_theta[:-1, :-1])
             np.testing.assert_allclose(
                 theta_rep[loc_idx, -1, :-1],
-                log_theta[-1, :-1] * theta_loc_GM[:-1, loc_idx],
+                log_theta[-1, :-1] * theta_loc_gm[:-1, loc_idx],
             )
             np.testing.assert_allclose(
                 theta_rep[loc_idx, :-1, -1],
-                log_theta[:-1, -1] * theta_loc_MG[:-1, loc_idx],
+                log_theta[:-1, -1] * theta_loc_mg[:-1, loc_idx],
             )
             np.testing.assert_allclose(theta_rep[loc_idx, -1, -1], log_theta[-1, -1])
 
@@ -94,21 +109,27 @@ class TestCompositePenaltyGradient(unittest.TestCase):
         rng = np.random.default_rng(seed=100)
 
         log_theta = jnp.array(rng.normal(size=(n, n)))
-        theta_loc_GM = jnp.array(rng.normal(size=(n, n_loc)))
-        theta_loc_MG = jnp.array(rng.normal(size=(n, n_loc)))
-        omega_m = jnp.array(rng.normal(size=(n,)))
-        omega_p = jnp.array(rng.normal(size=(n,)))
+        theta_loc_gm = jnp.array(rng.normal(size=(n, n_loc)))
+        theta_loc_mg = jnp.array(rng.normal(size=(n, n_loc)))
+        omega_m = jnp.array(rng.normal(size=(n + 1, n_loc)))
+        omega_g = jnp.array(rng.normal(size=(n,)))
+        theta_met_br = jnp.array(rng.normal(size=(n_loc,)))
+        theta_gm = jnp.array(rng.normal(size=(n,)))
+        theta_mg = jnp.array(rng.normal(size=(n,)))
 
         theta_ext = reg_opt.create_theta_extended(
-            log_theta=log_theta,
+            theta_g=log_theta,
+            theta_met_br=theta_met_br,
+            theta_gm=theta_gm,
+            theta_mg=theta_mg,
             omega_m=omega_m,
-            omega_p=omega_p,
-            theta_loc_GM=theta_loc_GM,
-            theta_loc_MG=theta_loc_MG,
+            omega_g=omega_g,
+            theta_loc_gm=theta_loc_gm,
+            theta_loc_mg=theta_loc_mg,
         )
 
         grad_rep = jnp.array(rng.normal(size=(n_loc, n, n)))
-        grad_theta = reg_opt.reparametrization_grad(theta_ext, grad_rep)
+        grad_theta = reg_opt.reparametrization_(theta_ext, grad_rep)
 
         base_value = jnp.sum(reg_opt.reparametrization(theta_ext) * grad_rep)
         h = 1e-6
@@ -117,11 +138,14 @@ class TestCompositePenaltyGradient(unittest.TestCase):
             for j in range(n):
                 log_theta_h = log_theta.at[i, j].add(h)
                 theta_ext_h = reg_opt.create_theta_extended(
-                    log_theta=log_theta_h,
+                    theta_g=log_theta_h,
+                    theta_met_br=theta_met_br,
+                    theta_gm=theta_gm,
+                    theta_mg=theta_mg,
                     omega_m=omega_m,
-                    omega_p=omega_p,
-                    theta_loc_GM=theta_loc_GM,
-                    theta_loc_MG=theta_loc_MG,
+                    omega_g=omega_g,
+                    theta_loc_gm=theta_loc_gm,
+                    theta_loc_mg=theta_loc_mg,
                 )
                 value_h = jnp.sum(reg_opt.reparametrization(theta_ext_h) * grad_rep)
                 grad_numerical[i, j] = float((value_h - base_value) / h)
