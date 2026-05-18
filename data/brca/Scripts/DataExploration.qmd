@@ -1,0 +1,766 @@
+---
+title: "Data Exploration: MSK-CHORD and MSK-MET"
+author: "Maurin Widmer"
+format: html
+editor: visual
+---
+
+# Intent
+
+In this exploratory data analysis I intend to get a feel for the two data sets MSK-CHORD and MSK-MET. I wont look in to a lot of details, but try and see in what ways the data is similar and in what ways they differ.
+
+# Libraries
+
+```{r}
+library(tidyverse)
+library(janitor)
+library(skimr)
+library(readr)
+```
+
+# MSK-CHORD
+
+Targeted sequencing of 25040 tumors from 24950 patients and their matched normals via MSK-IMPACT, along with clinical annotations, some of which are derived from natural language processing (denoted NLP).
+
+## 1. Loading and Overview
+
+```{r}
+## Load Data
+msk_chord <- read_tsv("../Data/msk_chord_2024_clinical_data.tsv")
+msk_chord   <- msk_chord   |> clean_names()
+## Inspect Structure
+glimpse(msk_chord)
+```
+
+## 2. Missing Data
+
+```{r}
+msk_chord |> 
+  summarise(across(everything(), ~ sum(is.na(.)))) |> 
+  pivot_longer(everything(), names_to = "variable", values_to = "n_missing") |>
+  arrange(desc(n_missing))
+```
+
+## 3. Duplicates
+
+```{r}
+##looking for duplicates
+sum(duplicated(msk_chord))
+msk_chord |> 
+  count(sample_id) |> 
+  filter(n > 1)
+```
+
+## 4. Range and Validity Check
+
+```{r}
+summary(msk_chord)
+```
+
+# MSK-MET
+
+Pan-cancer cohort of tumor genomic and clinical outcome data from 25,000 patients. The dataset identifies associations between tumor genomic alterations and patterns of metastatic dissemination across 50 tumor types; showing that chromosomal instability is strongly correlated with metastatic burden in some tumor types, like prostate and lung adenocarcinomas and HR+/HER2+ breast ductal carcinoma, but not in others, such as colorectal MSS, pancreatic adenocarcinoma and high-grade serous ovarian cancer. The study also identifies somatic alterations associated with increased metastatic burden and routes of metastatic spread. Our data offers a resource for the investigation of the biologic basis for metastatic spread and highlights the role of chromosomal instability in cancer progression.
+
+## 1. Loading and Overview
+
+```{r}
+## Load Data
+msk_met <- read_tsv("../Data/msk_met_2021_clinical_data.tsv")
+msk_met   <- msk_met   |> clean_names()
+## Inspect Structure
+glimpse(msk_met)
+```
+
+## 2. Missing Data
+
+```{r}
+msk_met |> 
+  summarise(across(everything(), ~ sum(is.na(.)))) |> 
+  pivot_longer(everything(), names_to = "variable", values_to = "n_missing") |>
+  arrange(desc(n_missing))
+```
+
+## 3. Duplicate
+
+```{r}
+## Searching for Duplicates
+sum(duplicated(msk_met))
+msk_met |> 
+  count(sample_id) |> 
+  filter(n > 1)
+```
+
+## 4. Range and Validity Check
+
+```{r}
+summary(msk_met)
+```
+
+# Checking if there is any overlap in data
+
+## 1. Patient level
+
+```{r}
+colnames(msk_met)
+colnames(msk_chord)
+```
+
+```{r}
+## Looking at the number of common patient id
+common_patients <- intersect(
+  unique(msk_met$patient_id),
+  unique(msk_chord$patient_id)
+)
+
+length(common_patients)
+
+## Proportion of common patients
+length(common_patients) / length(unique(msk_met$patient_id))
+length(common_patients) / length(unique(msk_chord$patient_id))
+```
+
+We get that about half the patients contributed to both of the studies. (50.5% and 52.2%)
+
+## 2. Sample level
+
+```{r}
+common_samples <- intersect(
+  unique(msk_met$sample_id),
+  unique(msk_chord$sample_id)
+)
+
+length(common_samples)
+
+## Proportion of common patients
+length(common_samples) / length(unique(msk_met$sample_id))
+length(common_samples) / length(unique(msk_chord$sample_id))
+```
+
+And just under half the samples are used in both studies. (47,1%/48,5%)
+
+## 3. Overlapping Sample Belong to Overlapping Patients
+
+```{r}
+## Checking if IDs are consistent
+overlap_check <- msk_met |>
+  filter(sample_id %in% common_samples) |>
+  select(patient_id, sample_id) |>
+  inner_join(
+    msk_chord |> select(patient_id, sample_id),
+    by = "sample_id",
+    suffix = c("_met", "_chord")
+  )
+
+sum(overlap_check$patient_id_met != overlap_check$patient_id_chord)
+```
+
+Sample IDs are consistently mapped to the same patient in both data sets. There are no IDs with no mapping.
+
+## 4. Checking if sample_id is consistent
+
+Let's have a look at the patients that intersect and check if the patient data is the same to make sure they are really the same.
+
+```{r}
+# Extract all shared sample ids
+shared_samples <- intersect(
+  msk_chord$sample_id,
+  msk_met$sample_id
+)
+
+# Only looking at the shared data to compare the metadata. This way we're shure that the campels are actually the same.
+msk_chord_shared <- msk_chord |> 
+  filter(sample_id %in% shared_samples)
+
+msk_met_shared <- msk_met |> 
+  filter(sample_id %in% shared_samples)
+
+# Extract the column names both have in common
+common_columns <- intersect(
+  colnames(msk_chord),
+  colnames(msk_met)
+)
+
+# 
+msk_chord_shared <- msk_chord_shared |> select(all_of(common_columns))
+msk_met_shared   <- msk_met_shared   |> select(all_of(common_columns))
+
+# Create a dataframe that shows if a certein entry is equal in both data sets or not on NA
+msk_shared_information <- msk_chord_shared == msk_met_shared
+```
+
+After inspecting the data frame it seems like the difference between the rows sharing the same sample ID are only differences in naming conventions (lymph vs. lymph node, neck vs. head neck) or small mistakes (unknown vs. female).
+
+Next, I would like to check which tumor types are in the over lapping data
+
+```{r}
+unique(msk_chord_shared$cancer_type)
+```
+
+As expected, the cancer types in the MSK-CHORD data set are a strict subset of the MSK-MET data set. (attention not the data! only the cancer type)
+
+# Which primary tumor tends to metastasize to the CNS
+
+next we are searching in the MSK-MET data set for all the samples of metastatic tumors that lie in the CNS/Brain and then see if we find primary tumors that are more likely to spread to the CNS then others.
+
+We start with the count:
+
+```{r}
+# get the counts of metastasis samples per primary tumor site. I included multiple samples per patient since they are separate metastasis events, but if you ant to exclude them just uncomment below
+cns_met_counts <- msk_met |>
+  filter(metastatic_site == "CNS/Brain") |>
+  #distinct(patient_id, primary_tumor_site) |>
+  count(primary_tumor_site, sort = TRUE)
+
+cns_met_counts
+```
+
+Qualitatively we already see that breast cancer is the second most common primary tumor to CNS metastasis
+
+As a second step, we have a look at the metastasis rate:
+
+```{r}
+cns_rate <- msk_met |>
+  # distinct(patient_id, primary_tumor_site, metastatic_site) |>
+  mutate(cns = metastatic_site == "CNS/Brain") |>
+  group_by(primary_tumor_site) |>
+  summarise(
+    total_patients = n_distinct(patient_id),
+    cns_patients = n_distinct(patient_id[cns]),
+    cns_rate = cns_patients / total_patients
+  ) |>
+  arrange(desc(cns_rate))
+
+cns_rate
+```
+
+Here we see that the rate of breast cancer to the CNS is at 0.016 (43 in 2612 cases).
+
+## **Breast vs. all other tumors (Fisher’s exact test)**
+
+Tests whether the proportion of CNS metastases among breast tumors differs from the proportion among all other tumors. A significant result means breast tumors are statistically over- or under-represented among CNS metastases compared with other cancers.
+
+```{r}
+patient_data <- msk_met |>
+  #distinct(patient_id, primary_tumor_site, metastatic_site) |>
+  mutate(cns = metastatic_site == "CNS/Brain",
+    breast = primary_tumor_site == "Breast")
+
+# creating a contingancy table of breast tumours and if they spread to the CNS or not
+table_data <- table(patient_data$breast, patient_data$cns)
+
+# Chi^2 test
+fisher.test(table_data)
+```
+
+p value is not significant and null hypothesis can't be rejected.
+
+## **Top ten tumor types (Chi-square test)**
+
+Tests whether CNS metastasis frequency depends on tumor type across the 10 major tumor categories. A significant result means at least one tumor type has a different CNS metastasis rate than expected if tumor type and CNS spread were independent.
+
+```{r}
+top_tumors <- msk_met |>
+  count(primary_tumor_site, sort = TRUE) |>
+  slice_head(n = 10) |>
+  pull(primary_tumor_site)
+
+filtered <- patient_data |>
+  mutate(
+    tumor_group = ifelse(primary_tumor_site %in% top_tumors,
+                         primary_tumor_site,
+                         "Other")
+  )
+
+tab <- table(filtered$tumor_group, filtered$cns)
+
+chisq.test(tab)
+```
+
+Here we just see that a sample (probably lung metastasis) seems to be significant.
+
+## **Logistic regression (CNS metastasis \~ breast)**
+
+Models the probability of a metastasis being in the CNS as a function of tumor type and estimatesodds ratios for each tumor type relative to a reference. A significant coefficient means that tumor type has significantly higher or lower odds of CNS metastasis compared with the reference tumor type.
+
+```{r}
+model <- glm(
+  cns ~ breast,
+  data = patient_data,
+  family = binomial()
+)
+
+summary(model)
+```
+
+The breastTRUE coefficient is not significant. So if the primary tumor was a located in the breast is not a good predictor for metastasis to the CNS.
+
+# Details of mutations and tumor types
+
+In this section, I incorporate some of the next steps suggested by Kevin before moving on to the first tests with the model.
+
+First we look at the number of primary tumors (and secondary) in in the CNS and breast.
+
+```{r}
+# number of primary and metastatic tumors (total)
+msk_met |>
+  count(sample_type)
+
+# number of primary and metastatic breast tumors
+msk_met |>
+  filter(primary_tumor_site == "Breast") |>
+  count(sample_type)
+
+# number of primary and metastatic tumors by tumor type
+msk_met |>
+  count(cancer_type, sample_type)
+
+# number of metastatinc breast tumor HER2+/her2
+breast_data <- msk_met |>
+  filter(cancer_type == "Breast Cancer") |>
+  count(subtype, sample_type)
+breast_data
+
+breast_table <- table(
+  msk_met$subtype[msk_met$cancer_type == "Breast Cancer"],
+  msk_met$sample_type[msk_met$cancer_type == "Breast Cancer"]
+)
+
+chisq.test(breast_table)
+```
+
+A p-value of 0.2111 means we do not have statistical evidence that mutation type differs between primary and metastatic tumors. **-\> DISCUSS WITH KEVIN**
+
+## Which Mutations are more common metastasis than in primary breast
+
+First, we load the mutations data for msk_met and msk_chord
+
+```{r}
+# load mutations for MSK-MET
+muts_met <- read.delim("../Data/msk_met_2021/data_mutations.txt")
+
+# load mutations for MSK-CHORD
+mut_chord <- read.delim("../Data/msk_chord_2024/data_mutations.txt")
+```
+
+Next, we attach sample information (Cancer_Type and sample_type) to the mutation information via the sample_id/Tumor_Sample_Barcode.
+
+```{r}
+# Attache sample meta data to mutations
+muts_met_annot <- muts_met |>
+  inner_join(
+    msk_met |> select(sample_id, cancer_type, sample_type),
+    by = c("Tumor_Sample_Barcode" = "sample_id")
+  )
+
+# Restrict to breast cancer
+breast_muts <- muts_met_annot |>
+  filter(cancer_type == "Breast Cancer")
+
+# Count mutations per gene
+gene_counts <- breast_muts |>
+  count(Hugo_Symbol, sample_type, sort = TRUE)
+
+gene_counts
+
+# Count mutated samples per gene
+gene_sample_counts <- breast_muts |>
+  distinct(Tumor_Sample_Barcode, Hugo_Symbol, sample_type) |>
+  count(Hugo_Symbol, sample_type, sort = TRUE)
+
+# top genes in primary tumor
+gene_sample_counts |>
+  filter(sample_type == "Primary") |>
+  slice_max(n, n = 10)
+
+# top genes in metastases
+gene_sample_counts |>
+  filter(sample_type == "Metastasis") |>
+  slice_max(n, n = 10)
+
+# compute frequency for breast cancer
+n_samples <- msk_met |>
+  filter(cancer_type == "Breast Cancer") |>
+  count(sample_type, name = "total_samples")
+
+gene_sample_counts <- breast_muts |>
+  distinct(Tumor_Sample_Barcode, Hugo_Symbol, sample_type) |>
+  count(Hugo_Symbol, sample_type, name = "mutated_samples")
+
+gene_freq <- gene_sample_counts |>
+  left_join(n_samples, by = "sample_type")
+
+gene_freq <- gene_freq |>
+  mutate(freq = mutated_samples / total_samples)
+
+gene_freq_wide <- gene_freq |>
+  select(Hugo_Symbol, sample_type, freq) |>
+  pivot_wider(
+    names_from = sample_type,
+    values_from = freq
+  )
+
+gene_freq_wide
+
+# creating long dataset
+gene_freq_long <- gene_freq_wide |>
+  pivot_longer(
+    cols = c("Primary", "Metastasis"),
+    names_to = "Sample_Type",
+    values_to = "Frequency"
+  )
+
+# prepare data for plotting
+top_genes <- gene_freq_wide |>
+  slice_max(Metastasis, n = 10) |>
+  pull(Hugo_Symbol)
+
+gene_freq_long_top <- gene_freq_long |>
+  filter(Hugo_Symbol %in% top_genes)
+
+# plotingt the top genes
+ggplot(gene_freq_long_top, aes(x = Hugo_Symbol, y = Frequency, fill = Sample_Type)) +
+  geom_col(position = "dodge") +
+  labs(
+    title = "Top 10 Breast Cancer Mutated Genes (Primary vs Metastasis)",
+    x = "Gene",
+    y = "Mutation Frequency"
+  ) +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+```
+
+# CNS metastases originating from breast cancer vs. primary CNS tumors
+
+We are now interested in the differences between primary CNS tumors and metastasis in the CNS that specifically originate from breast cancer. For that we define two groups:
+
+**A. CNS metastases from breast cancer**
+
+-   From `msk_met`:
+
+    -   `sample_type == "Metastasis"`
+
+    -   `primary_tumor_site == "Breast"`
+
+    -   `metastatic_site == "CNS/Brain"`
+
+**B. Primary CNS tumors**
+
+-   From `tcga_data` (primary CNS data is not available in MSK):
+
+    -   `sample_type == "Primary"`
+
+    -   `cancer_type` = `"CNS/Brain"`
+
+For Group B we take the TCGA data set because msk does not contain primary brain tumors. The data set is downloaded for a cohort of primary brain tumors. We start by loading the data:
+
+```{r}
+# Load TCGA primary brain tumors
+tcga_data <- read_tsv("../Data/frequently-mutated-genes.2026-03-09.tsv")
+```
+
+First, we link the mutations with the two groups
+
+```{r}
+# CNS metastases from breast
+cns_met_breast <- muts_met |>
+  inner_join(msk_met |> 
+               filter(sample_type == "Metastasis",
+                      primary_tumor_site == "Breast",
+                      metastatic_site == "CNS/Brain") |>
+               select(sample_id, sample_type, primary_tumor_site, metastatic_site),
+             by = c("Tumor_Sample_Barcode" = "sample_id"))
+
+# Primary CNS tumors are ready from loaded data. We need to change the colnames 'symbol' = Hugo symbol and 'cohort_ssm_affected_cases_persfentage' = frequency
+```
+
+Next, we summarize mutation frequencies per gene
+
+```{r}
+# CNS metastases from breast mutation counts
+cns_met_breast_counts <- cns_met_breast |>
+  distinct(Tumor_Sample_Barcode, Hugo_Symbol) |>
+  count(Hugo_Symbol, name = "n_samples") 
+
+# Primary CNS
+primary_cns_counts <- tcga_data |>
+  rename(Hugo_Symbol = symbol, freq_tcga = cohort_ssm_affected_cases_percentage)
+
+primary_cns_counts$freq_tcga <- primary_cns_counts$freq_tcga / 100 # percentage -> frequency
+
+n_cns_met_breast <- length(unique(cns_met_breast$Tumor_Sample_Barcode))
+
+cns_met_breast_counts <- cns_met_breast_counts |>
+  mutate(freq = n_samples / n_cns_met_breast)
+
+# Compare the two groups
+combined_freq <- full_join(
+  cns_met_breast_counts |> 
+    rename(freq_msk = freq) |>      # make sure the column is called freq_msk
+    select(Hugo_Symbol, freq_msk),
+  
+  primary_cns_counts |>
+    select(Hugo_Symbol, freq_tcga),
+  
+  by = "Hugo_Symbol"
+) |>
+  replace_na(list(freq_msk = 0, freq_tcga = 0))
+```
+
+## Short visualization
+
+```{r}
+combined_long <- combined_freq |>
+  pivot_longer(cols = c(freq_msk, freq_tcga),
+               names_to = "Cohort",
+               values_to = "Frequency") |>
+  mutate(Cohort = recode(Cohort,
+                         freq_msk = "CNS Metastasis (Breast)",
+                         freq_tcga = "Primary CNS"))
+
+# Top 10 genes in CNS metastases
+top_genes <- combined_freq |>
+  slice_max(freq_msk, n = 10) |>
+  pull(Hugo_Symbol)
+
+combined_long_top <- combined_long |>
+  filter(Hugo_Symbol %in% top_genes)
+
+ggplot(combined_long_top, aes(x = Hugo_Symbol, y = Frequency, fill = Cohort)) +
+  geom_col(position = "dodge") +
+  labs(
+    title = "Mutation Frequencies in CNS Breast Metastases vs Primary CNS Tumors",
+    x = "Gene",
+    y = "Mutation Frequency"
+  ) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## Statistical test (Fisher's exact test)
+
+For each mutation we perform a Fisher's exact test to see it there is a significant difference between primary CNS cancer and those metastasizing from breast cancer.
+
+We prepare the count values for the
+
+```{r}
+# we have already prepared the count values for the metastasis
+glimpse(cns_met_breast_counts)
+
+# Prepare the tcga primary cns tumor count values
+cns_primary_counts <- tcga_data |> 
+  select(
+    Hugo_Symbol = symbol,
+    n_samples = num_cohort_ssm_affected_cases,
+    freq = cohort_ssm_affected_cases_percentage
+  )
+cns_primary_counts$freq <- cns_primary_counts$freq / 100 # percentage -> frequency
+
+glimpse(cns_primary_counts)
+```
+
+```{r}
+# merging the cont data from primary and metstasis into one data set
+cns_all_counts <- full_join(
+  cns_met_breast_counts |> rename(n_msk = n_samples, freq_msk = freq),
+  cns_primary_counts |> rename(n_tcga = n_samples, freq_tcga = freq),
+  by = "Hugo_Symbol"
+) |>
+  replace_na(list(n_msk = 0, n_tcga = 0, freq_msk = 0, freq_tcga = 0))
+#### IS IT REASONABLE TO DEAL WITH NA LIKE THIS? -> ASK KEVIN
+```
+
+```{r}
+# MSK CNS breast metastases
+total_msk <- length(unique(cns_met_breast$Tumor_Sample_Barcode))
+
+# TCGA CNS primary tumors
+total_tcga <- unique(tcga_data$num_cohort_ssm_cases)[1]
+```
+
+```{r}
+# building the contigency table and add the p value of the fisher's exact test to the data
+gene_tests <- cns_all_counts |>
+  rowwise() |>
+  mutate(
+    freq_diff = freq_msk - freq_tcga,
+    p_value = fisher.test(matrix(
+      c(
+        n_msk,
+        total_msk - n_msk,
+        n_tcga,
+        total_tcga - n_tcga
+      ),
+      ncol = 2
+    ))$p.value
+  ) |>
+  ungroup() |>   # VERY IMPORTANT
+  mutate(
+    p_adj = p.adjust(p_value, method = "BH")
+  )
+
+# look at the siginficant mutations
+gene_tests |>
+  filter(p_adj < 0.05) |>
+  arrange(p_adj)
+```
+
+Let's visualize this in a plot
+
+```{r}
+top <- gene_tests |>
+  filter(p_adj < 0.05) |>
+  arrange(p_adj) |>
+  slice_head(n = 10)
+
+ggplot(top, aes(x = reorder(Hugo_Symbol, freq_diff), y = freq_diff)) +
+  geom_col() +
+  coord_flip() +
+  labs(
+    x = "Gene",
+    y = "Frequency difference (MSK - TCGA)",
+    title = "Top mutation differences"
+  ) +
+  theme_bw()
+```
+
+# Difference in mutation patterns between primary breast cancer and CNS metastasis originating in the breast
+
+Now, we'd like to have the same plot as we just had for the different frequencies in primary CNS cancer and metastasis originating in the breast but look at the mutations in primary breast cancer and compare them to the mutations in CNS meastasis.
+
+```{r}
+# all mutations of primary breast cancer
+breast_primary <- muts_met |>
+  inner_join(msk_met |> 
+               filter(sample_type == "Primary",
+                      primary_tumor_site == "Breast") |>
+               select(sample_id, sample_type, primary_tumor_site, metastatic_site),
+             by = c("Tumor_Sample_Barcode" = "sample_id"))
+
+# count of distinct muations in primary breast cancer
+breast_primary_counts <- breast_primary |>
+  distinct(Tumor_Sample_Barcode, Hugo_Symbol) |>
+  count(Hugo_Symbol, name = "n_samples") 
+
+# adding frequency of the metastasis
+n_breast_primary <- length(unique(breast_primary$Tumor_Sample_Barcode))
+
+breast_primary_counts <- breast_primary_counts |>
+  mutate(freq = n_samples / n_breast_primary)
+```
+
+Next, we crate a data frame containing the counts and frequencies of all mutations in both primary breast cancers and its CNS metastasis and build a contingency table for each mutated gene and calculation the p value of fisher's exact test
+
+```{r}
+breast_all_counts <- full_join(
+  cns_met_breast_counts |> rename(n_met = n_samples, freq_met = freq),
+  breast_primary_counts |> rename(n_prim = n_samples, freq_prim = freq),
+  by = "Hugo_Symbol"
+) |>
+  replace_na(list(n_met = 0, n_prim = 0, freq_met = 0, freq_prim = 0))
+
+# total number of MSK primary breast cancer
+total_prim <- n_breast_primary
+
+# total number of MSK CNS metastasis with origin in the breast
+total_met <- length(unique(cns_met_breast$Tumor_Sample_Barcode))
+
+# building the contigency table and add the p value of the fisher's exact test to the data
+gene_tests_breast <- breast_all_counts |>
+  rowwise() |>
+  mutate(
+    freq_diff = freq_met - freq_prim,
+    p_value = fisher.test(matrix(
+      c(
+        n_met,
+        total_met - n_met,
+        n_prim,
+        total_prim - n_prim
+      ),
+      ncol = 2
+    ))$p.value
+  ) |>
+  ungroup() |>
+  mutate(
+    p_adj = p.adjust(p_value, method = "BH")
+  )
+```
+
+Now, we visualize just like we did before
+
+```{r}
+# searching for the top ten significt differences in mutations 
+top_breast <- gene_tests_breast |>
+  filter(p_adj < 0.05) |>
+  arrange(p_adj) |>
+  slice_head(n = 10)
+
+# unfortunatelly non are significant so we procede with just the to performing
+top_breast_unsig <- gene_tests_breast |>
+  arrange(p_adj) |>
+  slice_head(n = 10)
+
+ggplot(top_breast_unsig, aes(x = reorder(Hugo_Symbol, freq_diff), y = freq_diff)) +
+  geom_col() +
+  coord_flip() +
+  labs(
+    x = "Gene",
+    y = "Frequency difference (MET - PRIM)",
+    title = "Top mutation differences"
+  ) +
+  theme_bw()
+```
+
+# Average number of Mutations
+
+Here we calculate the average number of mutations in primary breast cancer, primary CNS cancer and metastasis in CNS originating from a breast tumor.
+
+```{r}
+# average number of mutations in primary breast cancer
+avg_mut_breast <- muts_met |>
+  filter(Tumor_Sample_Barcode %in% breast_primary$Tumor_Sample_Barcode) |>
+  group_by(Tumor_Sample_Barcode) |>
+  summarise(n_mut = n()) |>   # count number of mutations per sample
+  summarise(avg_mut = mean(n_mut))
+
+avg_mut_breast
+
+# average number of mutations in primary CNS cancer
+# however, the tcga data is not sample level -> we approx
+
+# total mutations in the TCGA primary CNS cohort
+total_mut_cns_tcga <- sum(tcga_data$num_cohort_ssm_affected_cases, na.rm = TRUE)
+
+# number of samples in the cohort
+n_samples_cns_tcga <- max(tcga_data$num_cohort_ssm_cases, na.rm = TRUE)
+
+avg_mut_cns_primary <- total_mut_cns_tcga / n_samples_cns_tcga
+avg_mut_cns_primary
+
+#average number of mutations in metasasis in the CNS spread from breast
+avg_mut_cns_met <- muts_met |>
+  filter(Tumor_Sample_Barcode %in% cns_met_breast$Tumor_Sample_Barcode) |>
+  group_by(Tumor_Sample_Barcode) |>
+  summarise(n_mut = n()) |>
+  summarise(avg_mut = mean(n_mut))
+
+avg_mut_cns_met
+```
+
+```{r}
+# combining it in a table
+avg_mut_table <- tibble(
+  cohort = c("Primary Breast", "CNS Met from Breast", "Primary CNS"),
+  avg_mut = c(avg_mut_breast$avg_mut, avg_mut_cns_met$avg_mut, avg_mut_cns_primary)
+)
+
+avg_mut_table
+
+#plotting
+ggplot(avg_mut_table, aes(x = cohort, y = avg_mut, fill = cohort)) +
+  geom_col() +
+  theme_bw() +
+  labs(y = "Average number of mutations per sample", x = "")
+```

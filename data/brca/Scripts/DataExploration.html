@@ -1,0 +1,2813 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.5.57">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Maurin Widmer">
+
+<title>Data Exploration: MSK-CHORD and MSK-MET</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="DataExploration_files/libs/clipboard/clipboard.min.js"></script>
+<script src="DataExploration_files/libs/quarto-html/quarto.js"></script>
+<script src="DataExploration_files/libs/quarto-html/popper.min.js"></script>
+<script src="DataExploration_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="DataExploration_files/libs/quarto-html/anchor.min.js"></script>
+<link href="DataExploration_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="DataExploration_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="DataExploration_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="DataExploration_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="DataExploration_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Data Exploration: MSK-CHORD and MSK-MET</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Maurin Widmer </p>
+          </div>
+  </div>
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="intent" class="level1">
+<h1>Intent</h1>
+<p>In this exploratory data analysis I intend to get a feel for the two data sets MSK-CHORD and MSK-MET. I wont look in to a lot of details, but try and see in what ways the data is similar and in what ways they differ.</p>
+</section>
+<section id="libraries" class="level1">
+<h1>Libraries</h1>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
+✔ dplyr     1.1.4     ✔ readr     2.1.6
+✔ forcats   1.0.1     ✔ stringr   1.5.2
+✔ ggplot2   4.0.0     ✔ tibble    3.3.0
+✔ lubridate 1.9.4     ✔ tidyr     1.3.1
+✔ purrr     1.1.0     
+── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+✖ dplyr::filter() masks stats::filter()
+✖ dplyr::lag()    masks stats::lag()
+ℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(janitor)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'janitor'
+
+The following objects are masked from 'package:stats':
+
+    chisq.test, fisher.test</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(skimr)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="msk-chord" class="level1">
+<h1>MSK-CHORD</h1>
+<p>Targeted sequencing of 25040 tumors from 24950 patients and their matched normals via MSK-IMPACT, along with clinical annotations, some of which are derived from natural language processing (denoted NLP).</p>
+<section id="loading-and-overview" class="level2">
+<h2 class="anchored" data-anchor-id="loading-and-overview">1. Loading and Overview</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Load Data</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>msk_chord <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(<span class="st">"../Data/msk_chord_2024_clinical_data.tsv"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Rows: 25040 Columns: 53
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: "\t"
+chr (40): Study ID, Patient ID, Sample ID, Tumor Site: Adrenal Glands (NLP),...
+dbl (13): Current Age, Fraction Genome Altered, Gleason Score, 1st Reported ...
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>msk_chord   <span class="ot">&lt;-</span> msk_chord   <span class="sc">|&gt;</span> <span class="fu">clean_names</span>()</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="do">## Inspect Structure</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(msk_chord)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 25,040
+Columns: 53
+$ study_id                             &lt;chr&gt; "msk_chord_2024", "msk_chord_2024…
+$ patient_id                           &lt;chr&gt; "P-0000012", "P-0000012", "P-0000…
+$ sample_id                            &lt;chr&gt; "P-0000012-T02-IM3", "P-0000012-T…
+$ tumor_site_adrenal_glands_nlp        &lt;chr&gt; "No", "No", "No", "No", "No", "No…
+$ tumor_site_bone_nlp                  &lt;chr&gt; "No", "No", "Yes", "Yes", "Yes", …
+$ cancer_type                          &lt;chr&gt; "Breast Cancer", "Non-Small Cell …
+$ cancer_type_detailed                 &lt;chr&gt; "Breast Invasive Ductal Carcinoma…
+$ clinical_group                       &lt;chr&gt; NA, "3B", "1", "4", "2A", "4", "4…
+$ clinical_summary                     &lt;chr&gt; NA, "Distant", "Localized", "Dist…
+$ tumor_site_cns_brain_nlp             &lt;chr&gt; "No", "No", "Yes", "No", "Yes", "…
+$ current_age                          &lt;dbl&gt; 68, 68, 45, 68, 53, 43, 54, 71, 8…
+$ diagnosis_description                &lt;chr&gt; "Breast", "Lung and Bronchus", "B…
+$ ethnicity                            &lt;chr&gt; "Non-Spanish; Non-Hispanic", "Non…
+$ fraction_genome_altered              &lt;dbl&gt; 0.3146, 0.1844, 0.3503, 0.0185, 0…
+$ sex                                  &lt;chr&gt; "Female", "Female", "Female", "Fe…
+$ gene_panel                           &lt;chr&gt; "IMPACT341", "IMPACT341", "IMPACT…
+$ gleason_score_1st_reported_nlp       &lt;dbl&gt; NA, NA, NA, NA, NA, NA, NA, NA, N…
+$ gleason_score_highest_reported_nlp   &lt;dbl&gt; NA, NA, NA, NA, NA, NA, NA, NA, N…
+$ gleason_score_reported_on_sample_nlp &lt;dbl&gt; NA, NA, NA, NA, NA, NA, NA, NA, N…
+$ her2                                 &lt;chr&gt; "No", "No", "No", NA, "No", "No",…
+$ history_for_positive_pd_l1_nlp       &lt;chr&gt; "No", "No", NA, NA, NA, "No", NA,…
+$ hr                                   &lt;chr&gt; "No", "No", "Yes", NA, "No", "Yes…
+$ icd_o_histology_description          &lt;chr&gt; "Infiltrating Duct Carcinoma", "A…
+$ tumor_site_intra_abdominal           &lt;chr&gt; "Yes", "Yes", "No", "No", "No", "…
+$ tumor_site_liver_nlp                 &lt;chr&gt; "No", "No", "Yes", "Yes", "Yes", …
+$ tumor_site_lung_nlp                  &lt;chr&gt; "Yes", "Yes", "Yes", "Yes", "No",…
+$ tumor_site_lymph_node_nlp            &lt;chr&gt; "Yes", "Yes", "Yes", "Yes", "No",…
+$ metastatic_site                      &lt;chr&gt; NA, "Neck", "Liver", NA, NA, NA, …
+$ msi_comment                          &lt;chr&gt; "MICROSATELLITE INSTABILITY-INDET…
+$ msi_score                            &lt;dbl&gt; 4.10, 0.47, 2.55, -1.00, 3.55, 1.…
+$ msi_type                             &lt;chr&gt; "Indeterminate", "Stable", "Stabl…
+$ mutation_count                       &lt;dbl&gt; 1, 30, 7, 7, 10, 5, 1, 4, 2, 6, 1…
+$ number_of_tumor_registry_entries     &lt;dbl&gt; 2, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, …
+$ oncotree_code                        &lt;chr&gt; "IDC", "LUAD", "IDC", "LUAD", "ID…
+$ overall_survival_months              &lt;dbl&gt; 118.4546647, 118.4546647, 13.9068…
+$ overall_survival_status              &lt;chr&gt; "0:LIVING", "0:LIVING", "1:DECEAS…
+$ tumor_site_other_nlp                 &lt;chr&gt; "Yes", "Yes", "Yes", "No", "Yes",…
+$ pathological_group                   &lt;chr&gt; NA, NA, "1", NA, "1", "4", "4", "…
+$ sample_pd_l1_positive_nlp            &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, N…
+$ tumor_site_pleura_nlp                &lt;chr&gt; "No", "No", "Yes", "Yes", "Yes", …
+$ primary_tumor_site                   &lt;chr&gt; "Breast", "Lung", "Breast", "Lung…
+$ prior_treatment_to_msk_nlp           &lt;chr&gt; "Unknown", "Unknown", "Unknown", …
+$ race                                 &lt;chr&gt; "White", "White", "White", "Other…
+$ tumor_site_reproductive_organs_nlp   &lt;chr&gt; "No", "No", "No", "No", "No", "Ye…
+$ sample_class                         &lt;chr&gt; "Tumor", "Tumor", "Tumor", "Tumor…
+$ number_of_samples_per_patient        &lt;dbl&gt; 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, …
+$ sample_coverage                      &lt;dbl&gt; 344, 428, 281, 380, 401, 835, 799…
+$ sample_type                          &lt;chr&gt; "Primary", "Metastasis", "Metasta…
+$ smoking_history_nlp                  &lt;chr&gt; "Former/Current Smoker", "Former/…
+$ somatic_status                       &lt;chr&gt; "Matched", "Matched", "Matched", …
+$ stage_highest_recorded               &lt;chr&gt; "Stage 1-3", "Stage 1-3", "Stage …
+$ tmb_nonsynonymous                    &lt;dbl&gt; 1.109155, 32.165504, 7.764087, 7.…
+$ tumor_purity                         &lt;dbl&gt; NA, NA, 40, 30, 30, 25, 50, NA, 5…</code></pre>
+</div>
+</div>
+</section>
+<section id="missing-data" class="level2">
+<h2 class="anchored" data-anchor-id="missing-data">2. Missing Data</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>msk_chord <span class="sc">|&gt;</span> </span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="fu">across</span>(<span class="fu">everything</span>(), <span class="sc">~</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(.)))) <span class="sc">|&gt;</span> </span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="fu">everything</span>(), <span class="at">names_to =</span> <span class="st">"variable"</span>, <span class="at">values_to =</span> <span class="st">"n_missing"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(n_missing))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 53 × 2
+   variable                             n_missing
+   &lt;chr&gt;                                    &lt;int&gt;
+ 1 gleason_score_reported_on_sample_nlp     22930
+ 2 gleason_score_1st_reported_nlp           21768
+ 3 gleason_score_highest_reported_nlp       21768
+ 4 sample_pd_l1_positive_nlp                21514
+ 5 her2                                     19648
+ 6 hr                                       19648
+ 7 history_for_positive_pd_l1_nlp           17989
+ 8 metastatic_site                          16206
+ 9 pathological_group                        7273
+10 msi_comment                               5697
+# ℹ 43 more rows</code></pre>
+</div>
+</div>
+</section>
+<section id="duplicates" class="level2">
+<h2 class="anchored" data-anchor-id="duplicates">3. Duplicates</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="do">##looking for duplicates</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(<span class="fu">duplicated</span>(msk_chord))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>msk_chord <span class="sc">|&gt;</span> </span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(sample_id) <span class="sc">|&gt;</span> </span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(n <span class="sc">&gt;</span> <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 0 × 2
+# ℹ 2 variables: sample_id &lt;chr&gt;, n &lt;int&gt;</code></pre>
+</div>
+</div>
+</section>
+<section id="range-and-validity-check" class="level2">
+<h2 class="anchored" data-anchor-id="range-and-validity-check">4. Range and Validity Check</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(msk_chord)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   study_id          patient_id         sample_id        
+ Length:25040       Length:25040       Length:25040      
+ Class :character   Class :character   Class :character  
+ Mode  :character   Mode  :character   Mode  :character  
+                                                         
+                                                         
+                                                         
+                                                         
+ tumor_site_adrenal_glands_nlp tumor_site_bone_nlp cancer_type       
+ Length:25040                  Length:25040        Length:25040      
+ Class :character              Class :character    Class :character  
+ Mode  :character              Mode  :character    Mode  :character  
+                                                                     
+                                                                     
+                                                                     
+                                                                     
+ cancer_type_detailed clinical_group     clinical_summary  
+ Length:25040         Length:25040       Length:25040      
+ Class :character     Class :character   Class :character  
+ Mode  :character     Mode  :character   Mode  :character  
+                                                           
+                                                           
+                                                           
+                                                           
+ tumor_site_cns_brain_nlp  current_age    diagnosis_description
+ Length:25040             Min.   :10.00   Length:25040         
+ Class :character         1st Qu.:57.00   Class :character     
+ Mode  :character         Median :67.00   Mode  :character     
+                          Mean   :65.48                        
+                          3rd Qu.:75.00                        
+                          Max.   :89.00                        
+                          NA's   :3                            
+  ethnicity         fraction_genome_altered     sex           
+ Length:25040       Min.   :0.0000          Length:25040      
+ Class :character   1st Qu.:0.0211          Class :character  
+ Mode  :character   Median :0.1258          Mode  :character  
+                    Mean   :0.1803                            
+                    3rd Qu.:0.2839                            
+                    Max.   :1.0000                            
+                    NA's   :170                               
+  gene_panel        gleason_score_1st_reported_nlp
+ Length:25040       Min.   : 6.000                
+ Class :character   1st Qu.: 7.000                
+ Mode  :character   Median : 8.000                
+                    Mean   : 7.845                
+                    3rd Qu.: 9.000                
+                    Max.   :10.000                
+                    NA's   :21768                 
+ gleason_score_highest_reported_nlp gleason_score_reported_on_sample_nlp
+ Min.   : 6.000                     Min.   : 6.000                      
+ 1st Qu.: 7.000                     1st Qu.: 7.000                      
+ Median : 8.000                     Median : 8.000                      
+ Mean   : 7.982                     Mean   : 8.012                      
+ 3rd Qu.: 9.000                     3rd Qu.: 9.000                      
+ Max.   :10.000                     Max.   :10.000                      
+ NA's   :21768                      NA's   :22930                       
+     her2           history_for_positive_pd_l1_nlp      hr           
+ Length:25040       Length:25040                   Length:25040      
+ Class :character   Class :character               Class :character  
+ Mode  :character   Mode  :character               Mode  :character  
+                                                                     
+                                                                     
+                                                                     
+                                                                     
+ icd_o_histology_description tumor_site_intra_abdominal tumor_site_liver_nlp
+ Length:25040                Length:25040               Length:25040        
+ Class :character            Class :character           Class :character    
+ Mode  :character            Mode  :character           Mode  :character    
+                                                                            
+                                                                            
+                                                                            
+                                                                            
+ tumor_site_lung_nlp tumor_site_lymph_node_nlp metastatic_site   
+ Length:25040        Length:25040              Length:25040      
+ Class :character    Class :character          Class :character  
+ Mode  :character    Mode  :character          Mode  :character  
+                                                                 
+                                                                 
+                                                                 
+                                                                 
+ msi_comment          msi_score        msi_type         mutation_count   
+ Length:25040       Min.   :-1.000   Length:25040       Min.   :  1.000  
+ Class :character   1st Qu.: 0.020   Class :character   1st Qu.:  3.000  
+ Mode  :character   Median : 0.230   Mode  :character   Median :  5.000  
+                    Mean   : 1.439                      Mean   :  8.726  
+                    3rd Qu.: 0.900                      3rd Qu.:  8.000  
+                    Max.   :53.530                      Max.   :696.000  
+                    NA's   :553                         NA's   :1178     
+ number_of_tumor_registry_entries oncotree_code      overall_survival_months
+ Min.   : 0.000                   Length:25040       Min.   :  0.03288      
+ 1st Qu.: 1.000                   Class :character   1st Qu.: 11.14519      
+ Median : 1.000                   Mode  :character   Median : 24.65751      
+ Mean   : 1.316                                      Mean   : 32.12850      
+ 3rd Qu.: 1.000                                      3rd Qu.: 49.18351      
+ Max.   :10.000                                      Max.   :118.45467      
+                                                                            
+ overall_survival_status tumor_site_other_nlp pathological_group
+ Length:25040            Length:25040         Length:25040      
+ Class :character        Class :character     Class :character  
+ Mode  :character        Mode  :character     Mode  :character  
+                                                                
+                                                                
+                                                                
+                                                                
+ sample_pd_l1_positive_nlp tumor_site_pleura_nlp primary_tumor_site
+ Length:25040              Length:25040          Length:25040      
+ Class :character          Class :character      Class :character  
+ Mode  :character          Mode  :character      Mode  :character  
+                                                                   
+                                                                   
+                                                                   
+                                                                   
+ prior_treatment_to_msk_nlp     race          
+ Length:25040               Length:25040      
+ Class :character           Class :character  
+ Mode  :character           Mode  :character  
+                                              
+                                              
+                                              
+                                              
+ tumor_site_reproductive_organs_nlp sample_class      
+ Length:25040                       Length:25040      
+ Class :character                   Class :character  
+ Mode  :character                   Mode  :character  
+                                                      
+                                                      
+                                                      
+                                                      
+ number_of_samples_per_patient sample_coverage  sample_type       
+ Min.   :1.000                 Min.   :  23.0   Length:25040      
+ 1st Qu.:1.000                 1st Qu.: 470.0   Class :character  
+ Median :1.000                 Median : 598.0   Mode  :character  
+ Mean   :1.007                 Mean   : 609.1                     
+ 3rd Qu.:1.000                 3rd Qu.: 737.0                     
+ Max.   :2.000                 Max.   :2610.0                     
+                                                                  
+ smoking_history_nlp somatic_status     stage_highest_recorded
+ Length:25040        Length:25040       Length:25040          
+ Class :character    Class :character   Class :character      
+ Mode  :character    Mode  :character   Mode  :character      
+                                                              
+                                                              
+                                                              
+                                                              
+ tmb_nonsynonymous  tumor_purity  
+ Min.   :  0.000   Min.   : 0.00  
+ 1st Qu.:  2.461   1st Qu.:20.00  
+ Median :  4.102   Median :30.00  
+ Mean   :  7.258   Mean   :36.41  
+ 3rd Qu.:  6.918   3rd Qu.:50.00  
+ Max.   :570.962   Max.   :95.00  
+                   NA's   :586    </code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="msk-met" class="level1">
+<h1>MSK-MET</h1>
+<p>Pan-cancer cohort of tumor genomic and clinical outcome data from 25,000 patients. The dataset identifies associations between tumor genomic alterations and patterns of metastatic dissemination across 50 tumor types; showing that chromosomal instability is strongly correlated with metastatic burden in some tumor types, like prostate and lung adenocarcinomas and HR+/HER2+ breast ductal carcinoma, but not in others, such as colorectal MSS, pancreatic adenocarcinoma and high-grade serous ovarian cancer. The study also identifies somatic alterations associated with increased metastatic burden and routes of metastatic spread. Our data offers a resource for the investigation of the biologic basis for metastatic spread and highlights the role of chromosomal instability in cancer progression.</p>
+<section id="loading-and-overview-1" class="level2">
+<h2 class="anchored" data-anchor-id="loading-and-overview-1">1. Loading and Overview</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Load Data</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>msk_met <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(<span class="st">"../Data/msk_met_2021_clinical_data.tsv"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Rows: 25775 Columns: 55
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: "\t"
+chr (38): Study ID, Patient ID, Sample ID, Cancer Type, Cancer Type Detailed...
+dbl (16): Age at Death, Age at First Mets Dx, Age at Last Contact, Age at Se...
+lgl  (1): Metastatic patient
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>msk_met   <span class="ot">&lt;-</span> msk_met   <span class="sc">|&gt;</span> <span class="fu">clean_names</span>()</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="do">## Inspect Structure</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(msk_met)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 25,775
+Columns: 55
+$ study_id                      &lt;chr&gt; "msk_met_2021", "msk_met_2021", "msk_met…
+$ patient_id                    &lt;chr&gt; "P-0000004", "P-0000015", "P-0000024", "…
+$ sample_id                     &lt;chr&gt; "P-0000004-T01-IM3", "P-0000015-T01-IM3"…
+$ age_at_death                  &lt;dbl&gt; 40.06, 45.60, 64.25, 76.53, NA, 82.03, 7…
+$ age_at_first_mets_dx          &lt;dbl&gt; 39.66, 44.25, 59.44, 69.65, 68.41, 79.50…
+$ age_at_last_contact           &lt;dbl&gt; NA, NA, NA, NA, 78.43, NA, NA, 71.04, NA…
+$ age_at_sequencing             &lt;dbl&gt; 39.74, 44.44, 61.33, 74.81, 71.72, 81.00…
+$ age_at_surgical_procedure     &lt;dbl&gt; 37.03, 44.42, 61.00, 74.64, 71.58, 79.50…
+$ cancer_type                   &lt;chr&gt; "Breast Cancer", "Breast Cancer", "Endom…
+$ cancer_type_detailed          &lt;chr&gt; "Breast Invasive Ductal Carcinoma", "Bre…
+$ distant_mets_adrenal_gland    &lt;chr&gt; "No", "No", "No", "Yes", "No", "No", "No…
+$ distant_mets_biliary_tract    &lt;chr&gt; "No", "No", "No", "Yes", "No", "No", "No…
+$ distant_mets_bladder_ut       &lt;chr&gt; "No", "No", "No", "No", "No", "No", "No"…
+$ distant_mets_bone             &lt;chr&gt; "Yes", "Yes", "Yes", "No", "No", "No", "…
+$ distant_mets_bowel            &lt;chr&gt; "No", "No", "No", "Yes", "Yes", "No", "N…
+$ distant_mets_breast           &lt;chr&gt; "No", "No", "No", "No", "No", "No", "No"…
+$ distant_mets_cns_brain        &lt;chr&gt; "No", "Yes", "No", "No", "No", "No", "No…
+$ distant_mets_distant_ln       &lt;chr&gt; "No", "Yes", "No", "No", "Yes", "No", "Y…
+$ distant_mets_female_genital   &lt;chr&gt; "No", "No", "No", "Yes", "Yes", "No", "N…
+$ distant_mets_head_and_neck    &lt;chr&gt; "No", "No", "No", "No", "No", "No", "No"…
+$ distant_mets_intra_abdominal  &lt;chr&gt; "No", "No", "Yes", "Yes", "Yes", "Yes", …
+$ distant_mets_kidney           &lt;chr&gt; "No", "No", "No", "No", "No", "No", "No"…
+$ distant_mets_liver            &lt;chr&gt; "Yes", "Yes", "Yes", "Yes", "Yes", "Yes"…
+$ distant_mets_lung             &lt;chr&gt; "No", "Yes", "Yes", "No", "Yes", "Yes", …
+$ distant_mets_male_genital     &lt;chr&gt; "No", "No", "No", "No", "No", "No", "No"…
+$ distant_mets_mediastinum      &lt;chr&gt; "No", "No", "No", "No", "No", "No", "No"…
+$ distant_mets_ovary            &lt;chr&gt; "No", "Yes", "No", "Yes", "No", "No", "N…
+$ distant_mets_pleura           &lt;chr&gt; "No", "Yes", "No", "No", "No", "No", "No…
+$ distant_mets_pns              &lt;chr&gt; "No", "No", "No", "No", "No", "No", "No"…
+$ distant_mets_skin             &lt;chr&gt; "No", "No", "No", "No", "No", "No", "No"…
+$ distant_mets_unspecified      &lt;chr&gt; "No", "Yes", "Yes", "Yes", "Yes", "No", …
+$ fga                           &lt;dbl&gt; 0.278, 0.350, 0.388, 0.102, 0.420, 0.029…
+$ fraction_genome_altered       &lt;dbl&gt; 0.2782, 0.3503, 0.3878, 0.1020, 0.4196, …
+$ gene_panel                    &lt;chr&gt; "IMPACT341", "IMPACT341", "IMPACT341", "…
+$ metastatic_patient            &lt;lgl&gt; TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE…
+$ metastatic_site               &lt;chr&gt; NA, "Liver", "Lung", "Intra-Abdominal", …
+$ met_count                     &lt;dbl&gt; 2, 8, 8, 13, 11, 3, 4, 1, 5, 9, 0, 1, 2,…
+$ met_site_count                &lt;dbl&gt; 2, 8, 5, 8, 7, 3, 4, 1, 5, 9, 0, 1, 2, 4…
+$ msi_score                     &lt;dbl&gt; 2.50, 2.55, 0.72, 0.15, 1.23, 0.00, 0.08…
+$ msi_type                      &lt;chr&gt; "Stable", "Stable", "Stable", "Stable", …
+$ mutation_count                &lt;dbl&gt; 4, 7, 6, 2, 4, 1, 12, 4, 2, 10, 1, 27, 2…
+$ oncotree_code                 &lt;chr&gt; "IDC", "IDC", "UEC", "USC", "UEC", "PLEM…
+$ organ_system                  &lt;chr&gt; "Breast", "Breast", "Gynecologic", "Gyne…
+$ overall_survival_months       &lt;dbl&gt; 3.78, 13.90, 35.06, 46.00, 80.59, 12.32,…
+$ overall_survival_status       &lt;chr&gt; "1:DECEASED", "1:DECEASED", "1:DECEASED"…
+$ primary_tumor_site            &lt;chr&gt; "Breast", "Breast", "Uterus", "Uterus", …
+$ race_category                 &lt;chr&gt; "White", "White", "White", "White", "Asi…
+$ number_of_samples_per_patient &lt;dbl&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1…
+$ sample_coverage               &lt;dbl&gt; 428, 281, 1016, 1147, 1222, 668, 461, 76…
+$ sample_type                   &lt;chr&gt; "Primary", "Metastasis", "Metastasis", "…
+$ sex                           &lt;chr&gt; "Female", "Female", "Female", "Female", …
+$ subtype                       &lt;chr&gt; "Breast Ductal HR+HER2-", "Breast Ductal…
+$ subtype_abbreviation          &lt;chr&gt; "IDC HR+HER2-", "IDC HR+HER2-", "UCEC EN…
+$ tmb_nonsynonymous             &lt;dbl&gt; 4.436621, 7.764087, 6.654932, 1.957439, …
+$ tumor_purity                  &lt;dbl&gt; 50, 40, 40, 30, 10, NA, 40, 90, 40, 30, …</code></pre>
+</div>
+</div>
+</section>
+<section id="missing-data-1" class="level2">
+<h2 class="anchored" data-anchor-id="missing-data-1">2. Missing Data</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>msk_met <span class="sc">|&gt;</span> </span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="fu">across</span>(<span class="fu">everything</span>(), <span class="sc">~</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(.)))) <span class="sc">|&gt;</span> </span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="fu">everything</span>(), <span class="at">names_to =</span> <span class="st">"variable"</span>, <span class="at">values_to =</span> <span class="st">"n_missing"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(n_missing))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 55 × 2
+   variable                  n_missing
+   &lt;chr&gt;                         &lt;int&gt;
+ 1 age_at_death                  15752
+ 2 metastatic_site               15632
+ 3 age_at_last_contact           10129
+ 4 age_at_first_mets_dx           6137
+ 5 mutation_count                 1022
+ 6 age_at_surgical_procedure       822
+ 7 tumor_purity                    407
+ 8 age_at_sequencing               258
+ 9 overall_survival_months         116
+10 race_category                    77
+# ℹ 45 more rows</code></pre>
+</div>
+</div>
+</section>
+<section id="duplicate" class="level2">
+<h2 class="anchored" data-anchor-id="duplicate">3. Duplicate</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Searching for Duplicates</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(<span class="fu">duplicated</span>(msk_met))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>msk_met <span class="sc">|&gt;</span> </span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(sample_id) <span class="sc">|&gt;</span> </span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(n <span class="sc">&gt;</span> <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 0 × 2
+# ℹ 2 variables: sample_id &lt;chr&gt;, n &lt;int&gt;</code></pre>
+</div>
+</div>
+</section>
+<section id="range-and-validity-check-1" class="level2">
+<h2 class="anchored" data-anchor-id="range-and-validity-check-1">4. Range and Validity Check</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(msk_met)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   study_id          patient_id         sample_id          age_at_death  
+ Length:25775       Length:25775       Length:25775       Min.   :19.02  
+ Class :character   Class :character   Class :character   1st Qu.:57.16  
+ Mode  :character   Mode  :character   Mode  :character   Median :66.21  
+                                                          Mean   :64.90  
+                                                          3rd Qu.:73.86  
+                                                          Max.   :90.00  
+                                                          NA's   :15752  
+ age_at_first_mets_dx age_at_last_contact age_at_sequencing
+ Min.   :12.57        Min.   :18.41       Min.   :18.29    
+ 1st Qu.:53.07        1st Qu.:55.55       1st Qu.:54.39    
+ Median :62.28        Median :65.08       Median :63.70    
+ Mean   :61.01        Mean   :63.58       Mean   :62.30    
+ 3rd Qu.:70.13        3rd Qu.:72.89       3rd Qu.:71.46    
+ Max.   :90.00        Max.   :90.00       Max.   :90.00    
+ NA's   :6137         NA's   :10129       NA's   :258      
+ age_at_surgical_procedure cancer_type        cancer_type_detailed
+ Min.   :17.16             Length:25775       Length:25775        
+ 1st Qu.:53.56             Class :character   Class :character    
+ Median :62.88             Mode  :character   Mode  :character    
+ Mean   :61.51                                                    
+ 3rd Qu.:70.66                                                    
+ Max.   :90.00                                                    
+ NA's   :822                                                      
+ distant_mets_adrenal_gland distant_mets_biliary_tract distant_mets_bladder_ut
+ Length:25775               Length:25775               Length:25775           
+ Class :character           Class :character           Class :character       
+ Mode  :character           Mode  :character           Mode  :character       
+                                                                              
+                                                                              
+                                                                              
+                                                                              
+ distant_mets_bone  distant_mets_bowel distant_mets_breast
+ Length:25775       Length:25775       Length:25775       
+ Class :character   Class :character   Class :character   
+ Mode  :character   Mode  :character   Mode  :character   
+                                                          
+                                                          
+                                                          
+                                                          
+ distant_mets_cns_brain distant_mets_distant_ln distant_mets_female_genital
+ Length:25775           Length:25775            Length:25775               
+ Class :character       Class :character        Class :character           
+ Mode  :character       Mode  :character        Mode  :character           
+                                                                           
+                                                                           
+                                                                           
+                                                                           
+ distant_mets_head_and_neck distant_mets_intra_abdominal distant_mets_kidney
+ Length:25775               Length:25775                 Length:25775       
+ Class :character           Class :character             Class :character   
+ Mode  :character           Mode  :character             Mode  :character   
+                                                                            
+                                                                            
+                                                                            
+                                                                            
+ distant_mets_liver distant_mets_lung  distant_mets_male_genital
+ Length:25775       Length:25775       Length:25775             
+ Class :character   Class :character   Class :character         
+ Mode  :character   Mode  :character   Mode  :character         
+                                                                
+                                                                
+                                                                
+                                                                
+ distant_mets_mediastinum distant_mets_ovary distant_mets_pleura
+ Length:25775             Length:25775       Length:25775       
+ Class :character         Class :character   Class :character   
+ Mode  :character         Mode  :character   Mode  :character   
+                                                                
+                                                                
+                                                                
+                                                                
+ distant_mets_pns   distant_mets_skin  distant_mets_unspecified
+ Length:25775       Length:25775       Length:25775            
+ Class :character   Class :character   Class :character        
+ Mode  :character   Mode  :character   Mode  :character        
+                                                               
+                                                               
+                                                               
+                                                               
+      fga         fraction_genome_altered  gene_panel        metastatic_patient
+ Min.   :0.0000   Min.   :0.0000          Length:25775       Mode :logical     
+ 1st Qu.:0.0300   1st Qu.:0.0299          Class :character   FALSE:4229        
+ Median :0.1430   Median :0.1428          Mode  :character   TRUE :21546       
+ Mean   :0.1946   Mean   :0.1947                                               
+ 3rd Qu.:0.3050   3rd Qu.:0.3054                                               
+ Max.   :1.0000   Max.   :1.0000                                               
+                                                                               
+ metastatic_site      met_count      met_site_count     msi_score     
+ Length:25775       Min.   : 0.000   Min.   : 0.000   Min.   :-1.000  
+ Class :character   1st Qu.: 1.000   1st Qu.: 1.000   1st Qu.: 0.000  
+ Mode  :character   Median : 3.000   Median : 2.000   Median : 0.230  
+                    Mean   : 3.857   Mean   : 3.012   Mean   : 1.285  
+                    3rd Qu.: 6.000   3rd Qu.: 5.000   3rd Qu.: 0.860  
+                    Max.   :31.000   Max.   :15.000   Max.   :53.440  
+                                                      NA's   :2       
+   msi_type         mutation_count    oncotree_code      organ_system      
+ Length:25775       Min.   :  1.000   Length:25775       Length:25775      
+ Class :character   1st Qu.:  3.000   Class :character   Class :character  
+ Mode  :character   Median :  5.000   Mode  :character   Mode  :character  
+                    Mean   :  9.208                                        
+                    3rd Qu.:  8.000                                        
+                    Max.   :758.000                                        
+                    NA's   :1022                                           
+ overall_survival_months overall_survival_status primary_tumor_site
+ Min.   : 0.00           Length:25775            Length:25775      
+ 1st Qu.: 8.44           Class :character        Class :character  
+ Median :17.45           Mode  :character        Mode  :character  
+ Mean   :22.11                                                     
+ 3rd Qu.:33.12                                                     
+ Max.   :80.89                                                     
+ NA's   :116                                                       
+ race_category      number_of_samples_per_patient sample_coverage 
+ Length:25775       Min.   :1                     Min.   : 100.0  
+ Class :character   1st Qu.:1                     1st Qu.: 526.0  
+ Mode  :character   Median :1                     Median : 653.0  
+                    Mean   :1                     Mean   : 660.4  
+                    3rd Qu.:1                     3rd Qu.: 790.0  
+                    Max.   :1                     Max.   :2778.0  
+                                                                  
+ sample_type            sex              subtype          subtype_abbreviation
+ Length:25775       Length:25775       Length:25775       Length:25775        
+ Class :character   Class :character   Class :character   Class :character    
+ Mode  :character   Mode  :character   Mode  :character   Mode  :character    
+                                                                              
+                                                                              
+                                                                              
+                                                                              
+ tmb_nonsynonymous  tumor_purity   
+ Min.   :  0.000   Min.   :  0.00  
+ 1st Qu.:  2.218   1st Qu.: 20.00  
+ Median :  4.323   Median : 40.00  
+ Mean   :  7.955   Mean   : 39.74  
+ 3rd Qu.:  6.918   3rd Qu.: 50.00  
+ Max.   :654.576   Max.   :100.00  
+                   NA's   :407     </code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="checking-if-there-is-any-overlap-in-data" class="level1">
+<h1>Checking if there is any overlap in data</h1>
+<section id="patient-level" class="level2">
+<h2 class="anchored" data-anchor-id="patient-level">1. Patient level</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(msk_met)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> [1] "study_id"                      "patient_id"                   
+ [3] "sample_id"                     "age_at_death"                 
+ [5] "age_at_first_mets_dx"          "age_at_last_contact"          
+ [7] "age_at_sequencing"             "age_at_surgical_procedure"    
+ [9] "cancer_type"                   "cancer_type_detailed"         
+[11] "distant_mets_adrenal_gland"    "distant_mets_biliary_tract"   
+[13] "distant_mets_bladder_ut"       "distant_mets_bone"            
+[15] "distant_mets_bowel"            "distant_mets_breast"          
+[17] "distant_mets_cns_brain"        "distant_mets_distant_ln"      
+[19] "distant_mets_female_genital"   "distant_mets_head_and_neck"   
+[21] "distant_mets_intra_abdominal"  "distant_mets_kidney"          
+[23] "distant_mets_liver"            "distant_mets_lung"            
+[25] "distant_mets_male_genital"     "distant_mets_mediastinum"     
+[27] "distant_mets_ovary"            "distant_mets_pleura"          
+[29] "distant_mets_pns"              "distant_mets_skin"            
+[31] "distant_mets_unspecified"      "fga"                          
+[33] "fraction_genome_altered"       "gene_panel"                   
+[35] "metastatic_patient"            "metastatic_site"              
+[37] "met_count"                     "met_site_count"               
+[39] "msi_score"                     "msi_type"                     
+[41] "mutation_count"                "oncotree_code"                
+[43] "organ_system"                  "overall_survival_months"      
+[45] "overall_survival_status"       "primary_tumor_site"           
+[47] "race_category"                 "number_of_samples_per_patient"
+[49] "sample_coverage"               "sample_type"                  
+[51] "sex"                           "subtype"                      
+[53] "subtype_abbreviation"          "tmb_nonsynonymous"            
+[55] "tumor_purity"                 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(msk_chord)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> [1] "study_id"                            
+ [2] "patient_id"                          
+ [3] "sample_id"                           
+ [4] "tumor_site_adrenal_glands_nlp"       
+ [5] "tumor_site_bone_nlp"                 
+ [6] "cancer_type"                         
+ [7] "cancer_type_detailed"                
+ [8] "clinical_group"                      
+ [9] "clinical_summary"                    
+[10] "tumor_site_cns_brain_nlp"            
+[11] "current_age"                         
+[12] "diagnosis_description"               
+[13] "ethnicity"                           
+[14] "fraction_genome_altered"             
+[15] "sex"                                 
+[16] "gene_panel"                          
+[17] "gleason_score_1st_reported_nlp"      
+[18] "gleason_score_highest_reported_nlp"  
+[19] "gleason_score_reported_on_sample_nlp"
+[20] "her2"                                
+[21] "history_for_positive_pd_l1_nlp"      
+[22] "hr"                                  
+[23] "icd_o_histology_description"         
+[24] "tumor_site_intra_abdominal"          
+[25] "tumor_site_liver_nlp"                
+[26] "tumor_site_lung_nlp"                 
+[27] "tumor_site_lymph_node_nlp"           
+[28] "metastatic_site"                     
+[29] "msi_comment"                         
+[30] "msi_score"                           
+[31] "msi_type"                            
+[32] "mutation_count"                      
+[33] "number_of_tumor_registry_entries"    
+[34] "oncotree_code"                       
+[35] "overall_survival_months"             
+[36] "overall_survival_status"             
+[37] "tumor_site_other_nlp"                
+[38] "pathological_group"                  
+[39] "sample_pd_l1_positive_nlp"           
+[40] "tumor_site_pleura_nlp"               
+[41] "primary_tumor_site"                  
+[42] "prior_treatment_to_msk_nlp"          
+[43] "race"                                
+[44] "tumor_site_reproductive_organs_nlp"  
+[45] "sample_class"                        
+[46] "number_of_samples_per_patient"       
+[47] "sample_coverage"                     
+[48] "sample_type"                         
+[49] "smoking_history_nlp"                 
+[50] "somatic_status"                      
+[51] "stage_highest_recorded"              
+[52] "tmb_nonsynonymous"                   
+[53] "tumor_purity"                        </code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Looking at the number of common patient id</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>common_patients <span class="ot">&lt;-</span> <span class="fu">intersect</span>(</span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unique</span>(msk_met<span class="sc">$</span>patient_id),</span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unique</span>(msk_chord<span class="sc">$</span>patient_id)</span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(common_patients)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 13015</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Proportion of common patients</span></span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(common_patients) <span class="sc">/</span> <span class="fu">length</span>(<span class="fu">unique</span>(msk_met<span class="sc">$</span>patient_id))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.5049467</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(common_patients) <span class="sc">/</span> <span class="fu">length</span>(<span class="fu">unique</span>(msk_chord<span class="sc">$</span>patient_id))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.5216433</code></pre>
+</div>
+</div>
+<p>We get that about half the patients contributed to both of the studies. (50.5% and 52.2%)</p>
+</section>
+<section id="sample-level" class="level2">
+<h2 class="anchored" data-anchor-id="sample-level">2. Sample level</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>common_samples <span class="ot">&lt;-</span> <span class="fu">intersect</span>(</span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unique</span>(msk_met<span class="sc">$</span>sample_id),</span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unique</span>(msk_chord<span class="sc">$</span>sample_id)</span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(common_samples)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 12133</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Proportion of common patients</span></span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(common_samples) <span class="sc">/</span> <span class="fu">length</span>(<span class="fu">unique</span>(msk_met<span class="sc">$</span>sample_id))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.4707274</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(common_samples) <span class="sc">/</span> <span class="fu">length</span>(<span class="fu">unique</span>(msk_chord<span class="sc">$</span>sample_id))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.4845447</code></pre>
+</div>
+</div>
+<p>And just under half the samples are used in both studies. (47,1%/48,5%)</p>
+</section>
+<section id="overlapping-sample-belong-to-overlapping-patients" class="level2">
+<h2 class="anchored" data-anchor-id="overlapping-sample-belong-to-overlapping-patients">3. Overlapping Sample Belong to Overlapping Patients</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Checking if IDs are consistent</span></span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>overlap_check <span class="ot">&lt;-</span> msk_met <span class="sc">|&gt;</span></span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(sample_id <span class="sc">%in%</span> common_samples) <span class="sc">|&gt;</span></span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(patient_id, sample_id) <span class="sc">|&gt;</span></span>
+<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">inner_join</span>(</span>
+<span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a>    msk_chord <span class="sc">|&gt;</span> <span class="fu">select</span>(patient_id, sample_id),</span>
+<span id="cb46-7"><a href="#cb46-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">by =</span> <span class="st">"sample_id"</span>,</span>
+<span id="cb46-8"><a href="#cb46-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">suffix =</span> <span class="fu">c</span>(<span class="st">"_met"</span>, <span class="st">"_chord"</span>)</span>
+<span id="cb46-9"><a href="#cb46-9" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb46-10"><a href="#cb46-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-11"><a href="#cb46-11" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(overlap_check<span class="sc">$</span>patient_id_met <span class="sc">!=</span> overlap_check<span class="sc">$</span>patient_id_chord)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0</code></pre>
+</div>
+</div>
+<p>Sample IDs are consistently mapped to the same patient in both data sets. There are no IDs with no mapping.</p>
+</section>
+<section id="checking-if-sample_id-is-consistent" class="level2">
+<h2 class="anchored" data-anchor-id="checking-if-sample_id-is-consistent">4. Checking if sample_id is consistent</h2>
+<p>Let’s have a look at the patients that intersect and check if the patient data is the same to make sure they are really the same.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract all shared sample ids</span></span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a>shared_samples <span class="ot">&lt;-</span> <span class="fu">intersect</span>(</span>
+<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a>  msk_chord<span class="sc">$</span>sample_id,</span>
+<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a>  msk_met<span class="sc">$</span>sample_id</span>
+<span id="cb48-5"><a href="#cb48-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb48-6"><a href="#cb48-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-7"><a href="#cb48-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Only looking at the shared data to compare the metadata. This way we're shure that the campels are actually the same.</span></span>
+<span id="cb48-8"><a href="#cb48-8" aria-hidden="true" tabindex="-1"></a>msk_chord_shared <span class="ot">&lt;-</span> msk_chord <span class="sc">|&gt;</span> </span>
+<span id="cb48-9"><a href="#cb48-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(sample_id <span class="sc">%in%</span> shared_samples)</span>
+<span id="cb48-10"><a href="#cb48-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-11"><a href="#cb48-11" aria-hidden="true" tabindex="-1"></a>msk_met_shared <span class="ot">&lt;-</span> msk_met <span class="sc">|&gt;</span> </span>
+<span id="cb48-12"><a href="#cb48-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(sample_id <span class="sc">%in%</span> shared_samples)</span>
+<span id="cb48-13"><a href="#cb48-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-14"><a href="#cb48-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract the column names both have in common</span></span>
+<span id="cb48-15"><a href="#cb48-15" aria-hidden="true" tabindex="-1"></a>common_columns <span class="ot">&lt;-</span> <span class="fu">intersect</span>(</span>
+<span id="cb48-16"><a href="#cb48-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">colnames</span>(msk_chord),</span>
+<span id="cb48-17"><a href="#cb48-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">colnames</span>(msk_met)</span>
+<span id="cb48-18"><a href="#cb48-18" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb48-19"><a href="#cb48-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-20"><a href="#cb48-20" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb48-21"><a href="#cb48-21" aria-hidden="true" tabindex="-1"></a>msk_chord_shared <span class="ot">&lt;-</span> msk_chord_shared <span class="sc">|&gt;</span> <span class="fu">select</span>(<span class="fu">all_of</span>(common_columns))</span>
+<span id="cb48-22"><a href="#cb48-22" aria-hidden="true" tabindex="-1"></a>msk_met_shared   <span class="ot">&lt;-</span> msk_met_shared   <span class="sc">|&gt;</span> <span class="fu">select</span>(<span class="fu">all_of</span>(common_columns))</span>
+<span id="cb48-23"><a href="#cb48-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-24"><a href="#cb48-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a dataframe that shows if a certein entry is equal in both data sets or not on NA</span></span>
+<span id="cb48-25"><a href="#cb48-25" aria-hidden="true" tabindex="-1"></a>msk_shared_information <span class="ot">&lt;-</span> msk_chord_shared <span class="sc">==</span> msk_met_shared</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>After inspecting the data frame it seems like the difference between the rows sharing the same sample ID are only differences in naming conventions (lymph vs.&nbsp;lymph node, neck vs.&nbsp;head neck) or small mistakes (unknown vs.&nbsp;female).</p>
+<p>Next, I would like to check which tumor types are in the over lapping data</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="fu">unique</span>(msk_chord_shared<span class="sc">$</span>cancer_type)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Breast Cancer"              "Non-Small Cell Lung Cancer"
+[3] "Colorectal Cancer"          "Pancreatic Cancer"         
+[5] "Prostate Cancer"           </code></pre>
+</div>
+</div>
+<p>As expected, the cancer types in the MSK-CHORD data set are a strict subset of the MSK-MET data set. (attention not the data! only the cancer type)</p>
+</section>
+</section>
+<section id="which-primary-tumor-tends-to-metastasize-to-the-cns" class="level1">
+<h1>Which primary tumor tends to metastasize to the CNS</h1>
+<p>next we are searching in the MSK-MET data set for all the samples of metastatic tumors that lie in the CNS/Brain and then see if we find primary tumors that are more likely to spread to the CNS then others.</p>
+<p>We start with the count:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="co"># get the counts of metastasis samples per primary tumor site. I included multiple samples per patient since they are separate metastasis events, but if you ant to exclude them just uncomment below</span></span>
+<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a>cns_met_counts <span class="ot">&lt;-</span> msk_met <span class="sc">|&gt;</span></span>
+<span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(metastatic_site <span class="sc">==</span> <span class="st">"CNS/Brain"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb51-4"><a href="#cb51-4" aria-hidden="true" tabindex="-1"></a>  <span class="co">#distinct(patient_id, primary_tumor_site) |&gt;</span></span>
+<span id="cb51-5"><a href="#cb51-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(primary_tumor_site, <span class="at">sort =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb51-6"><a href="#cb51-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb51-7"><a href="#cb51-7" aria-hidden="true" tabindex="-1"></a>cns_met_counts</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 40 × 2
+   primary_tumor_site            n
+   &lt;chr&gt;                     &lt;int&gt;
+ 1 Lung                        207
+ 2 Breast                       42
+ 3 Skin                         34
+ 4 Unknown                      16
+ 5 Prostate                     13
+ 6 Cancer of Unknown Primary    11
+ 7 Colon                        11
+ 8 Ovary                        11
+ 9 Kidney                        8
+10 Testis                        8
+# ℹ 30 more rows</code></pre>
+</div>
+</div>
+<p>As a second step, we have a look at the metastasis rate:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a>cns_rate <span class="ot">&lt;-</span> msk_met <span class="sc">|&gt;</span></span>
+<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># distinct(patient_id, primary_tumor_site, metastatic_site) |&gt;</span></span>
+<span id="cb53-3"><a href="#cb53-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">cns =</span> metastatic_site <span class="sc">==</span> <span class="st">"CNS/Brain"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb53-4"><a href="#cb53-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(primary_tumor_site) <span class="sc">|&gt;</span></span>
+<span id="cb53-5"><a href="#cb53-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb53-6"><a href="#cb53-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">total_patients =</span> <span class="fu">n_distinct</span>(patient_id),</span>
+<span id="cb53-7"><a href="#cb53-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">cns_patients =</span> <span class="fu">n_distinct</span>(patient_id[cns]),</span>
+<span id="cb53-8"><a href="#cb53-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">cns_rate =</span> cns_patients <span class="sc">/</span> total_patients</span>
+<span id="cb53-9"><a href="#cb53-9" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb53-10"><a href="#cb53-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(cns_rate))</span>
+<span id="cb53-11"><a href="#cb53-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb53-12"><a href="#cb53-12" aria-hidden="true" tabindex="-1"></a>cns_rate</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 190 × 4
+   primary_tumor_site     total_patients cns_patients cns_rate
+   &lt;chr&gt;                           &lt;int&gt;        &lt;int&gt;    &lt;dbl&gt;
+ 1 Anorectal Junction                  1            1        1
+ 2 Base of Tongue                      1            1        1
+ 3 Bile duct                           1            1        1
+ 4 Biliary Tract                       1            1        1
+ 5 Blood Vessel                        1            1        1
+ 6 Buccal                              1            1        1
+ 7 Buccal Mucosa                       1            1        1
+ 8 Ear Canal                           1            1        1
+ 9 Ectopic Embryonic Rest              1            1        1
+10 Endome                              1            1        1
+# ℹ 180 more rows</code></pre>
+</div>
+</div>
+<p>Here we see that the rate of breast cancer to the CNS is rather low at 0.016 (43 in 2612 cases).</p>
+<section id="breast-vs.-all-other-tumors-fishers-exact-test" class="level2">
+<h2 class="anchored" data-anchor-id="breast-vs.-all-other-tumors-fishers-exact-test"><strong>Breast vs.&nbsp;all other tumors (Fisher’s exact test)</strong></h2>
+<p>Tests whether the proportion of CNS metastases among breast tumors differs from the proportion among all other tumors. A significant result means breast tumors are statistically over- or under-represented among CNS metastases compared with other cancers.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a>patient_data <span class="ot">&lt;-</span> msk_met <span class="sc">|&gt;</span></span>
+<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a>  <span class="co">#distinct(patient_id, primary_tumor_site, metastatic_site) |&gt;</span></span>
+<span id="cb55-3"><a href="#cb55-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">cns =</span> metastatic_site <span class="sc">==</span> <span class="st">"CNS/Brain"</span>,</span>
+<span id="cb55-4"><a href="#cb55-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">breast =</span> primary_tumor_site <span class="sc">==</span> <span class="st">"Breast"</span>)</span>
+<span id="cb55-5"><a href="#cb55-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-6"><a href="#cb55-6" aria-hidden="true" tabindex="-1"></a><span class="co"># creating a contingancy table of breast tumours and if they spread to the CNS or not</span></span>
+<span id="cb55-7"><a href="#cb55-7" aria-hidden="true" tabindex="-1"></a>table_data <span class="ot">&lt;-</span> <span class="fu">table</span>(patient_data<span class="sc">$</span>breast, patient_data<span class="sc">$</span>cns)</span>
+<span id="cb55-8"><a href="#cb55-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-9"><a href="#cb55-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Chi^2 test</span></span>
+<span id="cb55-10"><a href="#cb55-10" aria-hidden="true" tabindex="-1"></a><span class="fu">fisher.test</span>(table_data)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Fisher's Exact Test for Count Data
+
+data:  table_data
+p-value = 0.8702
+alternative hypothesis: true odds ratio is not equal to 1
+95 percent confidence interval:
+ 0.6745761 1.3296110
+sample estimates:
+odds ratio 
+  0.957784 </code></pre>
+</div>
+</div>
+<p>p value is not significant and null hypothesis can’t be rejected.</p>
+</section>
+<section id="top-ten-tumor-types-chi-square-test" class="level2">
+<h2 class="anchored" data-anchor-id="top-ten-tumor-types-chi-square-test"><strong>Top ten tumor types (Chi-square test)</strong></h2>
+<p>Tests whether CNS metastasis frequency depends on tumor type across the 10 major tumor categories. A significant result means at least one tumor type has a different CNS metastasis rate than expected if tumor type and CNS spread were independent.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a>top_tumors <span class="ot">&lt;-</span> msk_met <span class="sc">|&gt;</span></span>
+<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(primary_tumor_site, <span class="at">sort =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb57-3"><a href="#cb57-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_head</span>(<span class="at">n =</span> <span class="dv">10</span>) <span class="sc">|&gt;</span></span>
+<span id="cb57-4"><a href="#cb57-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pull</span>(primary_tumor_site)</span>
+<span id="cb57-5"><a href="#cb57-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-6"><a href="#cb57-6" aria-hidden="true" tabindex="-1"></a>filtered <span class="ot">&lt;-</span> patient_data <span class="sc">|&gt;</span></span>
+<span id="cb57-7"><a href="#cb57-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb57-8"><a href="#cb57-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">tumor_group =</span> <span class="fu">ifelse</span>(primary_tumor_site <span class="sc">%in%</span> top_tumors,</span>
+<span id="cb57-9"><a href="#cb57-9" aria-hidden="true" tabindex="-1"></a>                         primary_tumor_site,</span>
+<span id="cb57-10"><a href="#cb57-10" aria-hidden="true" tabindex="-1"></a>                         <span class="st">"Other"</span>)</span>
+<span id="cb57-11"><a href="#cb57-11" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb57-12"><a href="#cb57-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-13"><a href="#cb57-13" aria-hidden="true" tabindex="-1"></a>tab <span class="ot">&lt;-</span> <span class="fu">table</span>(filtered<span class="sc">$</span>tumor_group, filtered<span class="sc">$</span>cns)</span>
+<span id="cb57-14"><a href="#cb57-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-15"><a href="#cb57-15" aria-hidden="true" tabindex="-1"></a><span class="fu">chisq.test</span>(tab)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Pearson's Chi-squared test
+
+data:  tab
+X-squared = 299.49, df = 10, p-value &lt; 2.2e-16</code></pre>
+</div>
+</div>
+<p>Here we just see that lung metastasis seem to be significant.</p>
+</section>
+<section id="logistic-regression-cns-metastasis-breast" class="level2">
+<h2 class="anchored" data-anchor-id="logistic-regression-cns-metastasis-breast"><strong>Logistic regression (CNS metastasis ~ breast)</strong></h2>
+<p>Models the probability of a metastasis being in the CNS as a function of tumor type and estimatesodds ratios for each tumor type relative to a reference. A significant coefficient means that tumor type has significantly higher or lower odds of CNS metastasis compared with the reference tumor type.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb59"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">glm</span>(</span>
+<span id="cb59-2"><a href="#cb59-2" aria-hidden="true" tabindex="-1"></a>  cns <span class="sc">~</span> breast,</span>
+<span id="cb59-3"><a href="#cb59-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> patient_data,</span>
+<span id="cb59-4"><a href="#cb59-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">family =</span> <span class="fu">binomial</span>()</span>
+<span id="cb59-5"><a href="#cb59-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb59-6"><a href="#cb59-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb59-7"><a href="#cb59-7" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(model)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+glm(formula = cns ~ breast, family = binomial(), data = patient_data)
+
+Coefficients:
+            Estimate Std. Error z value Pr(&gt;|z|)    
+(Intercept) -3.13492    0.05247  -59.74   &lt;2e-16 ***
+breastTRUE  -0.04313    0.16600   -0.26    0.795    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+(Dispersion parameter for binomial family taken to be 1)
+
+    Null deviance: 3503.3  on 10140  degrees of freedom
+Residual deviance: 3503.2  on 10139  degrees of freedom
+  (15634 observations deleted due to missingness)
+AIC: 3507.2
+
+Number of Fisher Scoring iterations: 6</code></pre>
+</div>
+</div>
+<p>again the breastTRUE coefficient is not significant.</p>
+</section>
+</section>
+<section id="details-of-mutations-and-tumor-types" class="level1">
+<h1>Details of mutations and tumor types</h1>
+<p>In this section, I incorporate some of the next steps suggested by Kevin before moving on the the first tests with the model.</p>
+<p>First we look at the number of primary tumors (and secondary) in in the CNS.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb61"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb61-1"><a href="#cb61-1" aria-hidden="true" tabindex="-1"></a><span class="co"># number of primary and metastatic tumors (total)</span></span>
+<span id="cb61-2"><a href="#cb61-2" aria-hidden="true" tabindex="-1"></a>msk_met <span class="sc">|&gt;</span></span>
+<span id="cb61-3"><a href="#cb61-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(sample_type)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 2 × 2
+  sample_type     n
+  &lt;chr&gt;       &lt;int&gt;
+1 Metastasis  10143
+2 Primary     15632</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb63"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a><span class="co"># number of primary and metastatic breast tumors</span></span>
+<span id="cb63-2"><a href="#cb63-2" aria-hidden="true" tabindex="-1"></a>msk_met <span class="sc">|&gt;</span></span>
+<span id="cb63-3"><a href="#cb63-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(primary_tumor_site <span class="sc">==</span> <span class="st">"Breast"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb63-4"><a href="#cb63-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(sample_type)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 2 × 2
+  sample_type     n
+  &lt;chr&gt;       &lt;int&gt;
+1 Metastasis   1050
+2 Primary      1562</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb65"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb65-1"><a href="#cb65-1" aria-hidden="true" tabindex="-1"></a><span class="co"># number of primary and metastatic tumors by tumor type</span></span>
+<span id="cb65-2"><a href="#cb65-2" aria-hidden="true" tabindex="-1"></a>msk_met <span class="sc">|&gt;</span></span>
+<span id="cb65-3"><a href="#cb65-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(cancer_type, sample_type)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 54 × 3
+   cancer_type        sample_type     n
+   &lt;chr&gt;              &lt;chr&gt;       &lt;int&gt;
+ 1 Anal Cancer        Metastasis     35
+ 2 Anal Cancer        Primary        52
+ 3 Appendiceal Cancer Metastasis    114
+ 4 Appendiceal Cancer Primary        88
+ 5 Bladder Cancer     Metastasis    243
+ 6 Bladder Cancer     Primary       915
+ 7 Breast Cancer      Metastasis   1048
+ 8 Breast Cancer      Primary      1561
+ 9 Cervical Cancer    Metastasis     37
+10 Cervical Cancer    Primary        66
+# ℹ 44 more rows</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb67"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a><span class="co"># number of metastatinc breast tumor HER2+/her2</span></span>
+<span id="cb67-2"><a href="#cb67-2" aria-hidden="true" tabindex="-1"></a>breast_data <span class="ot">&lt;-</span> msk_met <span class="sc">|&gt;</span></span>
+<span id="cb67-3"><a href="#cb67-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(cancer_type <span class="sc">==</span> <span class="st">"Breast Cancer"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb67-4"><a href="#cb67-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(subtype, sample_type)</span>
+<span id="cb67-5"><a href="#cb67-5" aria-hidden="true" tabindex="-1"></a>breast_data</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 10 × 3
+   subtype                       sample_type     n
+   &lt;chr&gt;                         &lt;chr&gt;       &lt;int&gt;
+ 1 Breast Ductal HR+HER2+        Metastasis    109
+ 2 Breast Ductal HR+HER2+        Primary       147
+ 3 Breast Ductal HR+HER2-        Metastasis    583
+ 4 Breast Ductal HR+HER2-        Primary       941
+ 5 Breast Ductal HR-HER2+        Metastasis     50
+ 6 Breast Ductal HR-HER2+        Primary        65
+ 7 Breast Ductal Triple Negative Metastasis    143
+ 8 Breast Ductal Triple Negative Primary       198
+ 9 Breast Lobular HR+            Metastasis    163
+10 Breast Lobular HR+            Primary       210</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb69"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb69-1"><a href="#cb69-1" aria-hidden="true" tabindex="-1"></a>breast_table <span class="ot">&lt;-</span> <span class="fu">table</span>(</span>
+<span id="cb69-2"><a href="#cb69-2" aria-hidden="true" tabindex="-1"></a>  msk_met<span class="sc">$</span>subtype[msk_met<span class="sc">$</span>cancer_type <span class="sc">==</span> <span class="st">"Breast Cancer"</span>],</span>
+<span id="cb69-3"><a href="#cb69-3" aria-hidden="true" tabindex="-1"></a>  msk_met<span class="sc">$</span>sample_type[msk_met<span class="sc">$</span>cancer_type <span class="sc">==</span> <span class="st">"Breast Cancer"</span>]</span>
+<span id="cb69-4"><a href="#cb69-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb69-5"><a href="#cb69-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb69-6"><a href="#cb69-6" aria-hidden="true" tabindex="-1"></a><span class="fu">chisq.test</span>(breast_table)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Pearson's Chi-squared test
+
+data:  breast_table
+X-squared = 5.8437, df = 4, p-value = 0.2111</code></pre>
+</div>
+</div>
+<p>A p-value of 0.2111 means we do not have statistical evidence that mutation type differs between primary and metastatic tumors.</p>
+<section id="which-mutations-are-more-common-metastasis-than-in-primary-breast" class="level2">
+<h2 class="anchored" data-anchor-id="which-mutations-are-more-common-metastasis-than-in-primary-breast">Which Mutations are more common metastasis than in primary breast</h2>
+<p>First, we load the mutations data for msk_met and msk_chord</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb71"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb71-1"><a href="#cb71-1" aria-hidden="true" tabindex="-1"></a><span class="co"># load mutations for MSK-MET</span></span>
+<span id="cb71-2"><a href="#cb71-2" aria-hidden="true" tabindex="-1"></a>muts_met <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="st">"../Data/msk_met_2021/data_mutations.txt"</span>)</span>
+<span id="cb71-3"><a href="#cb71-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb71-4"><a href="#cb71-4" aria-hidden="true" tabindex="-1"></a><span class="co"># load mutations for MSK-CHORD</span></span>
+<span id="cb71-5"><a href="#cb71-5" aria-hidden="true" tabindex="-1"></a>mut_chord <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="st">"../Data/msk_chord_2024/data_mutations.txt"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Next, we attach sample information (Cancer_Type and sample_type) to the mutation information via the sample_id/Tumor_Sample_Barcode.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb72"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb72-1"><a href="#cb72-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Attache sample meta data to mutations</span></span>
+<span id="cb72-2"><a href="#cb72-2" aria-hidden="true" tabindex="-1"></a>muts_met_annot <span class="ot">&lt;-</span> muts_met <span class="sc">|&gt;</span></span>
+<span id="cb72-3"><a href="#cb72-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">inner_join</span>(</span>
+<span id="cb72-4"><a href="#cb72-4" aria-hidden="true" tabindex="-1"></a>    msk_met <span class="sc">|&gt;</span> <span class="fu">select</span>(sample_id, cancer_type, sample_type),</span>
+<span id="cb72-5"><a href="#cb72-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"Tumor_Sample_Barcode"</span> <span class="ot">=</span> <span class="st">"sample_id"</span>)</span>
+<span id="cb72-6"><a href="#cb72-6" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb72-7"><a href="#cb72-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb72-8"><a href="#cb72-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Restrict to breast cancer</span></span>
+<span id="cb72-9"><a href="#cb72-9" aria-hidden="true" tabindex="-1"></a>breast_muts <span class="ot">&lt;-</span> muts_met_annot <span class="sc">|&gt;</span></span>
+<span id="cb72-10"><a href="#cb72-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(cancer_type <span class="sc">==</span> <span class="st">"Breast Cancer"</span>)</span>
+<span id="cb72-11"><a href="#cb72-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb72-12"><a href="#cb72-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Count mutations per gene</span></span>
+<span id="cb72-13"><a href="#cb72-13" aria-hidden="true" tabindex="-1"></a>gene_counts <span class="ot">&lt;-</span> breast_muts <span class="sc">|&gt;</span></span>
+<span id="cb72-14"><a href="#cb72-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(Hugo_Symbol, sample_type, <span class="at">sort =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb72-15"><a href="#cb72-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb72-16"><a href="#cb72-16" aria-hidden="true" tabindex="-1"></a>gene_counts</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>       Hugo_Symbol sample_type   n
+1           PIK3CA     Primary 684
+2             TP53     Primary 559
+3             TP53  Metastasis 456
+4           PIK3CA  Metastasis 429
+5            GATA3     Primary 252
+6             CDH1     Primary 208
+7           MAP3K1     Primary 185
+8             ESR1  Metastasis 162
+9             CDH1  Metastasis 160
+10           GATA3  Metastasis 150
+11            PTEN     Primary 127
+12          MAP3K1  Metastasis 106
+13            CBFB     Primary 105
+14            TBX3     Primary 100
+15          ARID1A     Primary  82
+16            AKT1     Primary  76
+17          ARID1A  Metastasis  76
+18           FOXA1  Metastasis  72
+19            PTEN  Metastasis  71
+20           KMT2C     Primary  70
+21            TBX3  Metastasis  70
+22             NF1  Metastasis  68
+23           RUNX1     Primary  67
+24          MAP2K4     Primary  61
+25           FOXA1     Primary  60
+26            MLL3  Metastasis  60
+27           ERBB2  Metastasis  59
+28            AKT1  Metastasis  58
+29           NCOR1     Primary  58
+30           NCOR1  Metastasis  57
+31            FAT1  Metastasis  54
+32            SPEN  Metastasis  54
+33           KMT2C  Metastasis  51
+34             NF1     Primary  51
+35            SPEN     Primary  49
+36           BRCA2     Primary  44
+37           SF3B1     Primary  44
+38             ATM  Metastasis  43
+39            FAT1     Primary  42
+40             RB1     Primary  42
+41          MAP2K4  Metastasis  41
+42           BRCA2  Metastasis  39
+43            MLL3     Primary  38
+44           RUNX1  Metastasis  38
+45           BRCA1  Metastasis  36
+46            ESR1     Primary  34
+47             RB1  Metastasis  34
+48           STAG2  Metastasis  33
+49           ARID2  Metastasis  32
+50            CBFB  Metastasis  32
+51           ERBB2     Primary  32
+52           ERBB3     Primary  32
+53          NOTCH2  Metastasis  32
+54            NSD1  Metastasis  32
+55          NOTCH1     Primary  31
+56             APC  Metastasis  29
+57            CTCF     Primary  29
+58          GRIN2A     Primary  29
+59           KMT2D     Primary  29
+60            MLL2  Metastasis  29
+61          PIK3R1  Metastasis  29
+62          CREBBP  Metastasis  28
+63          DNMT3A     Primary  28
+64           ERBB3  Metastasis  28
+65           KMT2D  Metastasis  28
+66             MGA     Primary  28
+67            ROS1  Metastasis  28
+68           ZFHX3     Primary  28
+69             ATR  Metastasis  27
+70           ZFHX3  Metastasis  27
+71         ANKRD11     Primary  26
+72             ATM     Primary  26
+73          CDKN2A     Primary  26
+74            MEN1  Metastasis  26
+75           PTPRD     Primary  26
+76          CREBBP     Primary  25
+77           MED12     Primary  25
+78          NOTCH3  Metastasis  25
+79          NOTCH4  Metastasis  25
+80         ANKRD11  Metastasis  24
+81          ARID1B  Metastasis  24
+82           KDM6A     Primary  24
+83            MEN1     Primary  24
+84          NOTCH1  Metastasis  24
+85          PIK3R1     Primary  24
+86           PTPRD  Metastasis  24
+87            TET1     Primary  24
+88            TSC2  Metastasis  24
+89          CDKN2A  Metastasis  23
+90            CTCF  Metastasis  23
+91         SMARCA4  Metastasis  23
+92          ARID1B     Primary  22
+93          CARD11  Metastasis  22
+94            JAK1  Metastasis  22
+95           KMT2A     Primary  22
+96            MTOR  Metastasis  22
+97            NSD1     Primary  22
+98          RICTOR  Metastasis  22
+99           SF3B1  Metastasis  22
+100           BCOR  Metastasis  21
+101         CDKN1B     Primary  21
+102          FGFR4  Metastasis  21
+103           FLT4     Primary  21
+104         GRIN2A  Metastasis  21
+105            MGA  Metastasis  21
+106           MTOR     Primary  21
+107         NOTCH3     Primary  21
+108           TERT  Metastasis  21
+109           ATRX  Metastasis  20
+110          EP300  Metastasis  20
+111         PIK3CG     Primary  20
+112          PTPRS     Primary  20
+113          SETD2  Metastasis  20
+114          SETD2     Primary  20
+115            ALK     Primary  19
+116           BCOR     Primary  19
+117         DNMT3A  Metastasis  19
+118          DOT1L  Metastasis  19
+119          IGF1R  Metastasis  19
+120         INPPL1     Primary  19
+121          KDM5C  Metastasis  19
+122          MED12  Metastasis  19
+123         PIK3CG  Metastasis  19
+124            ALK  Metastasis  18
+125          LATS2     Primary  18
+126         NOTCH2     Primary  18
+127         PDGFRA  Metastasis  18
+128          POLD1     Primary  18
+129           POLE  Metastasis  18
+130          PTPRT     Primary  18
+131          SMAD4  Metastasis  18
+132             AR     Primary  17
+133          ARID2     Primary  17
+134           ATRX     Primary  17
+135          CDK12  Metastasis  17
+136            CIC  Metastasis  17
+137           EGFR     Primary  17
+138          EPHA5  Metastasis  17
+139          EPHA5     Primary  17
+140          EPHA7  Metastasis  17
+141           FLT4  Metastasis  17
+142           GLI1     Primary  17
+143         NOTCH4     Primary  17
+144          PALB2  Metastasis  17
+145         PIK3CB  Metastasis  17
+146          PREX2     Primary  17
+147          PTPRT  Metastasis  17
+148          STAG2     Primary  17
+149           TSC1  Metastasis  17
+150            BLM  Metastasis  16
+151          BRIP1  Metastasis  16
+152          CDK12     Primary  16
+153          DOT1L     Primary  16
+154          EP300     Primary  16
+155          ERBB4     Primary  16
+156          KDM5A  Metastasis  16
+157          KDM6A  Metastasis  16
+158          KMT2B     Primary  16
+159           MDC1  Metastasis  16
+160        PIK3C2G  Metastasis  16
+161         PIK3CD     Primary  16
+162           PLK2  Metastasis  16
+163          RAD50  Metastasis  16
+164         RECQL4     Primary  16
+165           RHOA  Metastasis  16
+166          SMAD4     Primary  16
+167           TET2  Metastasis  16
+168            APC     Primary  15
+169          BRCA1     Primary  15
+170         DICER1  Metastasis  15
+171           EGFR  Metastasis  15
+172          EPHB1  Metastasis  15
+173          FOXP1     Primary  15
+174         INPPL1  Metastasis  15
+175          KDM5A     Primary  15
+176            MLL  Metastasis  15
+177        PIK3C2G     Primary  15
+178          PLCG2     Primary  15
+179          PTCH1     Primary  15
+180           BAP1     Primary  14
+181          BRIP1     Primary  14
+182         CARD11     Primary  14
+183          DNMT1  Metastasis  14
+184          ERBB4  Metastasis  14
+185           FLT1  Metastasis  14
+186          FOXP1  Metastasis  14
+187       HIST1H3B  Metastasis  14
+188           IRS1  Metastasis  14
+189          KDM5C     Primary  14
+190           MDC1     Primary  14
+191           MSH6     Primary  14
+192          PARP1  Metastasis  14
+193          PTPRS  Metastasis  14
+194          RBM10  Metastasis  14
+195          RFWD2  Metastasis  14
+196           RHOA     Primary  14
+197         RICTOR     Primary  14
+198          SOX17  Metastasis  14
+199           SOX9  Metastasis  14
+200          EPHA3  Metastasis  13
+201           FLT3  Metastasis  13
+202          IGF1R     Primary  13
+203           IRS2  Metastasis  13
+204          KMT2A  Metastasis  13
+205          LATS2  Metastasis  13
+206           MLL2     Primary  13
+207          NTRK1     Primary  13
+208         PDGFRA     Primary  13
+209         PIK3R3  Metastasis  13
+210         RAD54L  Metastasis  13
+211            RET  Metastasis  13
+212           ROS1     Primary  13
+213        SMARCA4     Primary  13
+214           SPOP  Metastasis  13
+215          STK11  Metastasis  13
+216           TERT     Primary  13
+217           TET2     Primary  13
+218           XPO1     Primary  13
+219         ARID5B     Primary  12
+220          ASXL1  Metastasis  12
+221           BAP1  Metastasis  12
+222           DDR2  Metastasis  12
+223           DDR2     Primary  12
+224          DNMT1     Primary  12
+225          FGFR2  Metastasis  12
+226          FGFR2     Primary  12
+227           FLT1     Primary  12
+228         INPP4A  Metastasis  12
+229           IRS2     Primary  12
+230           JAK1     Primary  12
+231           JAK3     Primary  12
+232            KDR  Metastasis  12
+233           KRAS  Metastasis  12
+234        MAP3K13  Metastasis  12
+235           MSH2     Primary  12
+236          MST1R  Metastasis  12
+237          NUP93  Metastasis  12
+238         PIK3R2  Metastasis  12
+239           POLE     Primary  12
+240           TET1  Metastasis  12
+241             AR  Metastasis  11
+242           ARAF  Metastasis  11
+243          ASXL2     Primary  11
+244            AXL  Metastasis  11
+245           BRD4     Primary  11
+246         CDKN1B  Metastasis  11
+247 CDKN2Ap16INK4A  Metastasis  11
+248         EIF4A2  Metastasis  11
+249          EPHB1     Primary  11
+250          ERCC5     Primary  11
+251          FBXW7  Metastasis  11
+252          FGFR1  Metastasis  11
+253           GLI1  Metastasis  11
+254       HIST1H1C     Primary  11
+255          HNF1A     Primary  11
+256          IKZF1  Metastasis  11
+257            KDR     Primary  11
+258          KEAP1  Metastasis  11
+259           KLF4  Metastasis  11
+260           KLF4     Primary  11
+261            NBN     Primary  11
+262          NCOA3     Primary  11
+263         NFE2L2  Metastasis  11
+264          PBRM1     Primary  11
+265         PIK3CB     Primary  11
+266           PMS1  Metastasis  11
+267          PRDM1  Metastasis  11
+268          PREX2  Metastasis  11
+269          PTCH1  Metastasis  11
+270          RBM10     Primary  11
+271          RPTOR  Metastasis  11
+272          STK11     Primary  11
+273            TEK     Primary  11
+274        TP53BP1  Metastasis  11
+275           TSC2     Primary  11
+276         ARID5B  Metastasis  10
+277            ATR     Primary  10
+278          BARD1  Metastasis  10
+279            CIC     Primary  10
+280          ERCC5  Metastasis  10
+281           ETV1  Metastasis  10
+282           JAK2  Metastasis  10
+283           JAK2     Primary  10
+284           KRAS     Primary  10
+285          LATS1  Metastasis  10
+286         MAP2K1  Metastasis  10
+287            MLL     Primary  10
+288           PAK7  Metastasis  10
+289          PBRM1  Metastasis  10
+290           PLK2     Primary  10
+291          PPM1D     Primary  10
+292          RAD21     Primary  10
+293          RASA1  Metastasis  10
+294            RET     Primary  10
+295            SMO     Primary  10
+296         TCF7L2  Metastasis  10
+297           TP63  Metastasis  10
+298           TSC1     Primary  10
+299           UPF1     Primary  10
+300           XPO1  Metastasis  10
+301        ALOX12B     Primary   9
+302          AMER1  Metastasis   9
+303          AMER1     Primary   9
+304          ASXL1     Primary   9
+305          ASXL2  Metastasis   9
+306            AXL     Primary   9
+307            BTK  Metastasis   9
+308         DNMT3B     Primary   9
+309          EPHA7     Primary   9
+310          ERCC4     Primary   9
+311          FANCA  Metastasis   9
+312           GPS2  Metastasis   9
+313           IRF4     Primary   9
+314            MET     Primary   9
+315           MSH6  Metastasis   9
+316          NCOA3  Metastasis   9
+317          NUP93     Primary   9
+318         PIK3R2     Primary   9
+319           RARA  Metastasis   9
+320         RECQL4  Metastasis   9
+321          RPTOR     Primary   9
+322          SMAD2  Metastasis   9
+323            SMO  Metastasis   9
+324            SYK     Primary   9
+325        TP53BP1     Primary   9
+326           TP63     Primary   9
+327          ZRSR2     Primary   9
+328           ABL1  Metastasis   8
+329          AURKA  Metastasis   8
+330          AXIN1  Metastasis   8
+331          AXIN2     Primary   8
+332          BARD1     Primary   8
+333           BRD4  Metastasis   8
+334          CASP8  Metastasis   8
+335            CBL     Primary   8
+336          CDC73  Metastasis   8
+337          CHEK2  Metastasis   8
+338          CSF3R  Metastasis   8
+339           DIS3  Metastasis   8
+340          ERCC2  Metastasis   8
+341           EZH2     Primary   8
+342          FBXW7     Primary   8
+343          FGFR4     Primary   8
+344          GATA1  Metastasis   8
+345            HGF  Metastasis   8
+346       HIST1H1C  Metastasis   8
+347          HNF1A  Metastasis   8
+348           INSR  Metastasis   8
+349           JAK3  Metastasis   8
+350            JUN  Metastasis   8
+351            KIT  Metastasis   8
+352            KIT     Primary   8
+353          LATS1     Primary   8
+354            MET  Metastasis   8
+355         MRE11A     Primary   8
+356          MST1R     Primary   8
+357            MYC  Metastasis   8
+358          NTRK1  Metastasis   8
+359          NTRK2     Primary   8
+360          NTRK3  Metastasis   8
+361          NTRK3     Primary   8
+362           PAK1  Metastasis   8
+363          PALB2     Primary   8
+364          PARP1     Primary   8
+365         PDGFRB  Metastasis   8
+366         PDGFRB     Primary   8
+367         PIK3CD  Metastasis   8
+368          PLCG2  Metastasis   8
+369         RAD51C  Metastasis   8
+370          RTEL1     Primary   8
+371          SH2B3     Primary   8
+372           SOS1     Primary   8
+373          SOX17     Primary   8
+374           SOX9     Primary   8
+375           SPOP     Primary   8
+376        TMPRSS2  Metastasis   8
+377          TRAF7  Metastasis   8
+378           TSHR     Primary   8
+379           YAP1  Metastasis   8
+380           AGO2     Primary   7
+381          AXIN1     Primary   7
+382          AXIN2  Metastasis   7
+383           BCL6  Metastasis   7
+384           BRAF     Primary   7
+385            BTK     Primary   7
+386            CBL  Metastasis   7
+387           CDK8  Metastasis   7
+388 CDKN2Ap16INK4A     Primary   7
+389         CTNNB1     Primary   7
+390           CUL3  Metastasis   7
+391           CUL3     Primary   7
+392           DAXX  Metastasis   7
+393           DAXX     Primary   7
+394         DROSHA     Primary   7
+395         EIF4A2     Primary   7
+396          ERCC2     Primary   7
+397          ERCC4  Metastasis   7
+398        FAM175A     Primary   7
+399          FANCA     Primary   7
+400          GATA1     Primary   7
+401          GATA2     Primary   7
+402           GNAS     Primary   7
+403           GPS2     Primary   7
+404            HGF     Primary   7
+405       HIST1H3B     Primary   7
+406       HIST1H3H     Primary   7
+407          IKZF1     Primary   7
+408           IRS1     Primary   7
+409           MLH1     Primary   7
+410            MYC     Primary   7
+411            NF2  Metastasis   7
+412         NFE2L2     Primary   7
+413          PARK2     Primary   7
+414          POLD1  Metastasis   7
+415          PPM1D  Metastasis   7
+416          PRKD1     Primary   7
+417            REL  Metastasis   7
+418            REL     Primary   7
+419          SMAD2     Primary   7
+420        TNFAIP3     Primary   7
+421        WHSC1L1     Primary   7
+422            WT1  Metastasis   7
+423            WT1     Primary   7
+424           ARAF     Primary   6
+425           BCL6     Primary   6
+426         BMPR1A     Primary   6
+427          CDC73     Primary   6
+428          CHEK2     Primary   6
+429         CTNNB1  Metastasis   6
+430         DICER1     Primary   6
+431           DIS3     Primary   6
+432         DNMT3B  Metastasis   6
+433          EPHA3     Primary   6
+434            ERG  Metastasis   6
+435           ETV1     Primary   6
+436           ETV6     Primary   6
+437          FGFR1     Primary   6
+438             FH     Primary   6
+439           FLT3     Primary   6
+440          FOXL2  Metastasis   6
+441          FOXO1  Metastasis   6
+442          GATA2  Metastasis   6
+443          GNA11  Metastasis   6
+444      HIST1H2BD     Primary   6
+445       HIST1H3J     Primary   6
+446         IFNGR1     Primary   6
+447         INPP4B     Primary   6
+448           INSR     Primary   6
+449            JUN     Primary   6
+450          KEAP1     Primary   6
+451         MAP2K1     Primary   6
+452           MCL1  Metastasis   6
+453           MDM2  Metastasis   6
+454           MDM4  Metastasis   6
+455           MLH1  Metastasis   6
+456           MSH2  Metastasis   6
+457           MSI1     Primary   6
+458           MYCN     Primary   6
+459            PGR     Primary   6
+460         PIK3C3  Metastasis   6
+461           PMS2  Metastasis   6
+462           PMS2     Primary   6
+463        PPP2R1A  Metastasis   6
+464          RAD21  Metastasis   6
+465         RAD54L     Primary   6
+466           RAF1     Primary   6
+467           RARA     Primary   6
+468          RFWD2     Primary   6
+469          RNF43  Metastasis   6
+470        RPS6KA4  Metastasis   6
+471        RPS6KA4     Primary   6
+472        RPS6KB2     Primary   6
+473           RXRA     Primary   6
+474           SLX4     Primary   6
+475           SOS1  Metastasis   6
+476           SOX2  Metastasis   6
+477          STAT3  Metastasis   6
+478           TAP1     Primary   6
+479           TCF3  Metastasis   6
+480         TCF7L2     Primary   6
+481         TGFBR1     Primary   6
+482         TGFBR2  Metastasis   6
+483           ABL1     Primary   5
+484           AKT2  Metastasis   5
+485           AKT3  Metastasis   5
+486        ALOX12B  Metastasis   5
+487           BBC3  Metastasis   5
+488          BIRC3  Metastasis   5
+489         BMPR1A  Metastasis   5
+490          CASP8     Primary   5
+491          CCND1     Primary   5
+492          CCND2  Metastasis   5
+493          CD274  Metastasis   5
+494          CD276     Primary   5
+495         CDKN1A  Metastasis   5
+496   CDKN2Ap14ARF     Primary   5
+497          CRLF2     Primary   5
+498          CSDE1     Primary   5
+499          CSF1R  Metastasis   5
+500           CYLD     Primary   5
+501        CYSLTR2     Primary   5
+502           EZH2  Metastasis   5
+503          FANCC  Metastasis   5
+504          FGFR3  Metastasis   5
+505          FGFR3     Primary   5
+506           FLCN  Metastasis   5
+507          FOXO1     Primary   5
+508            FYN  Metastasis   5
+509          GNA11     Primary   5
+510           GNAS  Metastasis   5
+511          GSK3B  Metastasis   5
+512          IKBKE  Metastasis   5
+513          IKBKE     Primary   5
+514           IL7R  Metastasis   5
+515         INPP4A     Primary   5
+516         INPP4B  Metastasis   5
+517          KMT2B  Metastasis   5
+518            MPL  Metastasis   5
+519           MSH3  Metastasis   5
+520           MYCN  Metastasis   5
+521         NFKBIA     Primary   5
+522            PGR  Metastasis   5
+523         PIK3C3     Primary   5
+524           PMS1     Primary   5
+525          PRDM1     Primary   5
+526           RAC1     Primary   5
+527          RAD50     Primary   5
+528          RAD51  Metastasis   5
+529           RAF1  Metastasis   5
+530          RNF43     Primary   5
+531           SDHB     Primary   5
+532          SH2B3  Metastasis   5
+533        SMARCB1  Metastasis   5
+534        SMARCB1     Primary   5
+535            SRC  Metastasis   5
+536         STAT5A  Metastasis   5
+537          STK40     Primary   5
+538           TAP1  Metastasis   5
+539           TAP2     Primary   5
+540           TCF3     Primary   5
+541           TOP1  Metastasis   5
+542           TOP1     Primary   5
+543          TRAF2     Primary   5
+544          TRAF7     Primary   5
+545          WHSC1  Metastasis   5
+546           XIAP  Metastasis   5
+547           XIAP     Primary   5
+548          ACVR1  Metastasis   4
+549            B2M     Primary   4
+550           BBC3     Primary   4
+551          BIRC3     Primary   4
+552            BLM     Primary   4
+553           BRAF  Metastasis   4
+554           CALR  Metastasis   4
+555          CCNE1  Metastasis   4
+556          CD79A     Primary   4
+557           CDK4  Metastasis   4
+558           CDK4     Primary   4
+559           CDK8     Primary   4
+560         CDKN1A     Primary   4
+561          CEBPA     Primary   4
+562          CSDE1  Metastasis   4
+563          CXCR4     Primary   4
+564         DNAJB1     Primary   4
+565          EGFL7     Primary   4
+566           ELF3     Primary   4
+567          EPCAM  Metastasis   4
+568          ERCC3  Metastasis   4
+569          ERCC3     Primary   4
+570            ERG     Primary   4
+571          FGF19  Metastasis   4
+572          FGF19     Primary   4
+573             FH  Metastasis   4
+574          FOXL2     Primary   4
+575            FYN     Primary   4
+576       HIST1H3A  Metastasis   4
+577       HIST1H3D  Metastasis   4
+578       HIST1H3E  Metastasis   4
+579       HIST1H3G     Primary   4
+580       HIST1H3I  Metastasis   4
+581           HRAS     Primary   4
+582           IDH1     Primary   4
+583           IDH2  Metastasis   4
+584           IDH2     Primary   4
+585           IGF1     Primary   4
+586           INHA  Metastasis   4
+587          INHBA  Metastasis   4
+588          INHBA     Primary   4
+589           IRF4  Metastasis   4
+590        MAP3K13     Primary   4
+591          MAPK3     Primary   4
+592           MDM2     Primary   4
+593           MITF  Metastasis   4
+594            MPL     Primary   4
+595           MSH3     Primary   4
+596           MST1  Metastasis   4
+597           MST1     Primary   4
+598          MYD88  Metastasis   4
+599          MYD88     Primary   4
+600          MYOD1  Metastasis   4
+601            NBN  Metastasis   4
+602         NKX2-1  Metastasis   4
+603         NKX2-1     Primary   4
+604         NKX3-1  Metastasis   4
+605           PAK7     Primary   4
+606          PARK2  Metastasis   4
+607           PAX5     Primary   4
+608          PDCD1  Metastasis   4
+609        PPP2R1A     Primary   4
+610         PPP4R2     Primary   4
+611         PRDM14     Primary   4
+612        PRKAR1A     Primary   4
+613         PTPN11     Primary   4
+614           RHEB     Primary   4
+615          RTEL1  Metastasis   4
+616           SDHA  Metastasis   4
+617           SDHA     Primary   4
+618           SDHB  Metastasis   4
+619          SHOC2     Primary   4
+620           SHQ1  Metastasis   4
+621           SLX4  Metastasis   4
+622          SMAD3     Primary   4
+623        SMARCD1  Metastasis   4
+624            SRC     Primary   4
+625          SRSF2  Metastasis   4
+626          STAT3     Primary   4
+627         STAT5B  Metastasis   4
+628          STK19     Primary   4
+629          SUZ12  Metastasis   4
+630            SYK  Metastasis   4
+631            TEK  Metastasis   4
+632         TGFBR2     Primary   4
+633          U2AF1  Metastasis   4
+634          WHSC1     Primary   4
+635        WHSC1L1  Metastasis   4
+636           YAP1     Primary   4
+637          ZRSR2  Metastasis   4
+638           AGO2  Metastasis   3
+639           AKT2     Primary   3
+640          AURKA     Primary   3
+641            B2M  Metastasis   3
+642        BCL2L11  Metastasis   3
+643          CCND1  Metastasis   3
+644          CDC42     Primary   3
+645   CDKN2Ap14ARF  Metastasis   3
+646          CEBPA  Metastasis   3
+647          CSF1R     Primary   3
+648          CTLA4     Primary   3
+649           CYLD  Metastasis   3
+650         DROSHA  Metastasis   3
+651          DUSP4     Primary   3
+652           E2F3  Metastasis   3
+653           E2F3     Primary   3
+654            EED     Primary   3
+655          EGFL7  Metastasis   3
+656          EPAS1  Metastasis   3
+657          EPAS1     Primary   3
+658          EPCAM     Primary   3
+659            ERF     Primary   3
+660         FAM58A     Primary   3
+661           FGF3  Metastasis   3
+662           FGF3     Primary   3
+663           FGF4  Metastasis   3
+664           FGF4     Primary   3
+665          FUBP1  Metastasis   3
+666          FUBP1     Primary   3
+667           GNAQ  Metastasis   3
+668          H3F3C     Primary   3
+669       HIST1H3H  Metastasis   3
+670        HIST3H3  Metastasis   3
+671        HIST3H3     Primary   3
+672          HLA-A  Metastasis   3
+673           HRAS  Metastasis   3
+674         ICOSLG     Primary   3
+675           IL7R     Primary   3
+676         KNSTRN     Primary   3
+677            LYN  Metastasis   3
+678          MALT1  Metastasis   3
+679         MAP2K2  Metastasis   3
+680         MAP2K2     Primary   3
+681          MAPK1  Metastasis   3
+682          MAPK3  Metastasis   3
+683        MAPKAP1  Metastasis   3
+684            MAX  Metastasis   3
+685           MCL1     Primary   3
+686           MDM4     Primary   3
+687          MEF2B     Primary   3
+688           MLL4     Primary   3
+689          MUTYH     Primary   3
+690            NF2     Primary   3
+691         NFKBIA  Metastasis   3
+692         NKX3-1     Primary   3
+693          NTRK2  Metastasis   3
+694           NUF2  Metastasis   3
+695           NUF2     Primary   3
+696           PAK1     Primary   3
+697           PAX5  Metastasis   3
+698       PDCD1LG2     Primary   3
+699           PIM1  Metastasis   3
+700          PNRC1  Metastasis   3
+701         PRDM14  Metastasis   3
+702          PRKD1  Metastasis   3
+703          RAB35     Primary   3
+704           RAC1  Metastasis   3
+705         RAD51B  Metastasis   3
+706         RAD51C     Primary   3
+707          RASA1     Primary   3
+708           RIT1  Metastasis   3
+709           RIT1     Primary   3
+710           RRAS     Primary   3
+711          RRAS2     Primary   3
+712           RXRA  Metastasis   3
+713         SDHAF2     Primary   3
+714         SH2D1A  Metastasis   3
+715          SMAD3  Metastasis   3
+716        SMARCD1     Primary   3
+717          SMYD3  Metastasis   3
+718          SRSF2     Primary   3
+719         STAT5A     Primary   3
+720         STAT5B     Primary   3
+721           SUFU     Primary   3
+722          SUZ12     Primary   3
+723           TAP2  Metastasis   3
+724          TCEB1  Metastasis   3
+725        TMEM127     Primary   3
+726        TNFAIP3  Metastasis   3
+727          TRAF2  Metastasis   3
+728           TSHR  Metastasis   3
+729            VHL     Primary   3
+730           YES1  Metastasis   3
+731           YES1     Primary   3
+732           AKT3     Primary   2
+733          AURKB  Metastasis   2
+734          AURKB     Primary   2
+735        BCL2L11     Primary   2
+736          CARM1  Metastasis   2
+737          CCND2     Primary   2
+738          CCNE1     Primary   2
+739          CD276  Metastasis   2
+740          CD79A  Metastasis   2
+741           CDK6  Metastasis   2
+742          CENPA  Metastasis   2
+743          CHEK1  Metastasis   2
+744          CRLF2  Metastasis   2
+745          CXCR4  Metastasis   2
+746        CYSLTR2  Metastasis   2
+747        DCUN1D1  Metastasis   2
+748        DCUN1D1     Primary   2
+749         DNAJB1  Metastasis   2
+750          DUSP4  Metastasis   2
+751            EED  Metastasis   2
+752         EIF1AX     Primary   2
+753         ERRFI1  Metastasis   2
+754         ERRFI1     Primary   2
+755           ETV6  Metastasis   2
+756           EZH1  Metastasis   2
+757           EZH1     Primary   2
+758        FAM175A  Metastasis   2
+759         FAM46C  Metastasis   2
+760         FAM46C     Primary   2
+761           FLCN     Primary   2
+762          GSK3B     Primary   2
+763          H3F3B  Metastasis   2
+764          H3F3B     Primary   2
+765       HIST1H3A     Primary   2
+766       HIST1H3C  Metastasis   2
+767       HIST1H3F     Primary   2
+768       HIST1H3G  Metastasis   2
+769       HIST1H3I     Primary   2
+770       HIST1H3J  Metastasis   2
+771       HIST2H3D     Primary   2
+772          HLA-A     Primary   2
+773         HOXB13     Primary   2
+774         ICOSLG  Metastasis   2
+775           IDH1  Metastasis   2
+776         IFNGR1  Metastasis   2
+777           IGF2     Primary   2
+778           IL10  Metastasis   2
+779         KNSTRN  Metastasis   2
+780            LYN     Primary   2
+781          MALT1     Primary   2
+782          MAPK1     Primary   2
+783        MAPKAP1     Primary   2
+784            MAX     Primary   2
+785          MUTYH  Metastasis   2
+786          MYCL1  Metastasis   2
+787           NPM1     Primary   2
+788           NRAS  Metastasis   2
+789          NTHL1     Primary   2
+790          PDCD1     Primary   2
+791          PDPK1  Metastasis   2
+792          PDPK1     Primary   2
+793         PHOX2B     Primary   2
+794         PIK3R3     Primary   2
+795          PPARG     Primary   2
+796          PPP6C  Metastasis   2
+797          PPP6C     Primary   2
+798         PTPN11  Metastasis   2
+799          RAD51     Primary   2
+800         RAD51D     Primary   2
+801          RAD52     Primary   2
+802          RECQL     Primary   2
+803        RPS6KB2  Metastasis   2
+804          RRAGC     Primary   2
+805           RRAS  Metastasis   2
+806           RYBP     Primary   2
+807           SDHC  Metastasis   2
+808          SESN3     Primary   2
+809           SHQ1     Primary   2
+810          SMYD3     Primary   2
+811          SOCS1  Metastasis   2
+812           SOX2     Primary   2
+813         SPRED1     Primary   2
+814          STK40  Metastasis   2
+815           SUFU  Metastasis   2
+816        TMEM127  Metastasis   2
+817       TNFRSF14     Primary   2
+818          VEGFA     Primary   2
+819          VTCN1  Metastasis   2
+820          VTCN1     Primary   2
+821     AC008738.1  Metastasis   1
+822          ACVR1     Primary   1
+823          CARM1     Primary   1
+824          CCND3  Metastasis   1
+825          CD274     Primary   1
+826          CD79B  Metastasis   1
+827          CD79B     Primary   1
+828          CDC42  Metastasis   1
+829           CDK6     Primary   1
+830          CENPA     Primary   1
+831          CSF3R     Primary   1
+832          CTLA4  Metastasis   1
+833         EIF1AX  Metastasis   1
+834          EIF4E  Metastasis   1
+835          EIF4E     Primary   1
+836           ELF3  Metastasis   1
+837            ERF  Metastasis   1
+838          FANCC     Primary   1
+839         FIP1L1  Metastasis   1
+840           GNAQ     Primary   1
+841          GREM1  Metastasis   1
+842          GREM1     Primary   1
+843          H3F3A  Metastasis   1
+844          H3F3A     Primary   1
+845      HIST1H2BD  Metastasis   1
+846       HIST1H3E     Primary   1
+847       HIST1H3F  Metastasis   1
+848         HOXB13  Metastasis   1
+849            ID3  Metastasis   1
+850           IGF1  Metastasis   1
+851           IGF2  Metastasis   1
+852           INHA     Primary   1
+853           LMO1  Metastasis   1
+854          MEF2B  Metastasis   1
+855           MITF     Primary   1
+856         MRE11A  Metastasis   1
+857           MSI1  Metastasis   1
+858           MSI2     Primary   1
+859           MYCL  Metastasis   1
+860           MYCL     Primary   1
+861          MYCL1     Primary   1
+862          MYOD1     Primary   1
+863          NEGR1  Metastasis   1
+864          NEGR1     Primary   1
+865           NRAS     Primary   1
+866          NTHL1  Metastasis   1
+867           PIM1     Primary   1
+868          PNRC1     Primary   1
+869         PPP4R2  Metastasis   1
+870        PRKAR1A  Metastasis   1
+871          PRKCI  Metastasis   1
+872          PRKCI     Primary   1
+873         PTP4A1  Metastasis   1
+874          RAB35  Metastasis   1
+875           RAC2     Primary   1
+876         RAD51B     Primary   1
+877          RAD52  Metastasis   1
+878          RRAS2  Metastasis   1
+879           SDHC     Primary   1
+880          SESN2  Metastasis   1
+881          SESN3  Metastasis   1
+882          SETD8     Primary   1
+883         SH2D1A     Primary   1
+884          SOCS1     Primary   1
+885         SPRED1  Metastasis   1
+886          STK19  Metastasis   1
+887          TCEB1     Primary   1
+888         TGFBR1  Metastasis   1
+889        TMPRSS2     Primary   1
+890       TNFRSF14  Metastasis   1
+891          U2AF1     Primary   1
+892           UPF1  Metastasis   1
+893          VEGFA  Metastasis   1
+894            VHL  Metastasis   1
+895          WWTR1  Metastasis   1
+896          XRCC2  Metastasis   1
+897          XRCC2     Primary   1</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb74"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb74-1"><a href="#cb74-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Count mutated samples per gene</span></span>
+<span id="cb74-2"><a href="#cb74-2" aria-hidden="true" tabindex="-1"></a>gene_sample_counts <span class="ot">&lt;-</span> breast_muts <span class="sc">|&gt;</span></span>
+<span id="cb74-3"><a href="#cb74-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>(Tumor_Sample_Barcode, Hugo_Symbol, sample_type) <span class="sc">|&gt;</span></span>
+<span id="cb74-4"><a href="#cb74-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(Hugo_Symbol, sample_type, <span class="at">sort =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb74-5"><a href="#cb74-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb74-6"><a href="#cb74-6" aria-hidden="true" tabindex="-1"></a><span class="co"># top genes in primary tumor</span></span>
+<span id="cb74-7"><a href="#cb74-7" aria-hidden="true" tabindex="-1"></a>gene_sample_counts <span class="sc">|&gt;</span></span>
+<span id="cb74-8"><a href="#cb74-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(sample_type <span class="sc">==</span> <span class="st">"Primary"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb74-9"><a href="#cb74-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_max</span>(n, <span class="at">n =</span> <span class="dv">10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   Hugo_Symbol sample_type   n
+1       PIK3CA     Primary 608
+2         TP53     Primary 550
+3        GATA3     Primary 246
+4         CDH1     Primary 203
+5       MAP3K1     Primary 130
+6         PTEN     Primary 114
+7         CBFB     Primary 104
+8         TBX3     Primary  87
+9       ARID1A     Primary  78
+10        AKT1     Primary  75</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb76"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb76-1"><a href="#cb76-1" aria-hidden="true" tabindex="-1"></a><span class="co"># top genes in metastases</span></span>
+<span id="cb76-2"><a href="#cb76-2" aria-hidden="true" tabindex="-1"></a>gene_sample_counts <span class="sc">|&gt;</span></span>
+<span id="cb76-3"><a href="#cb76-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(sample_type <span class="sc">==</span> <span class="st">"Metastasis"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb76-4"><a href="#cb76-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_max</span>(n, <span class="at">n =</span> <span class="dv">10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   Hugo_Symbol sample_type   n
+1         TP53  Metastasis 449
+2       PIK3CA  Metastasis 367
+3         CDH1  Metastasis 155
+4         ESR1  Metastasis 154
+5        GATA3  Metastasis 147
+6       MAP3K1  Metastasis  77
+7       ARID1A  Metastasis  68
+8         PTEN  Metastasis  66
+9        FOXA1  Metastasis  65
+10         NF1  Metastasis  64</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb78"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb78-1"><a href="#cb78-1" aria-hidden="true" tabindex="-1"></a><span class="co"># compute frequency for breast cancer</span></span>
+<span id="cb78-2"><a href="#cb78-2" aria-hidden="true" tabindex="-1"></a>n_samples <span class="ot">&lt;-</span> msk_met <span class="sc">|&gt;</span></span>
+<span id="cb78-3"><a href="#cb78-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(cancer_type <span class="sc">==</span> <span class="st">"Breast Cancer"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb78-4"><a href="#cb78-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(sample_type, <span class="at">name =</span> <span class="st">"total_samples"</span>)</span>
+<span id="cb78-5"><a href="#cb78-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb78-6"><a href="#cb78-6" aria-hidden="true" tabindex="-1"></a>gene_sample_counts <span class="ot">&lt;-</span> breast_muts <span class="sc">|&gt;</span></span>
+<span id="cb78-7"><a href="#cb78-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>(Tumor_Sample_Barcode, Hugo_Symbol, sample_type) <span class="sc">|&gt;</span></span>
+<span id="cb78-8"><a href="#cb78-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(Hugo_Symbol, sample_type, <span class="at">name =</span> <span class="st">"mutated_samples"</span>)</span>
+<span id="cb78-9"><a href="#cb78-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb78-10"><a href="#cb78-10" aria-hidden="true" tabindex="-1"></a>gene_freq <span class="ot">&lt;-</span> gene_sample_counts <span class="sc">|&gt;</span></span>
+<span id="cb78-11"><a href="#cb78-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(n_samples, <span class="at">by =</span> <span class="st">"sample_type"</span>)</span>
+<span id="cb78-12"><a href="#cb78-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb78-13"><a href="#cb78-13" aria-hidden="true" tabindex="-1"></a>gene_freq <span class="ot">&lt;-</span> gene_freq <span class="sc">|&gt;</span></span>
+<span id="cb78-14"><a href="#cb78-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">freq =</span> mutated_samples <span class="sc">/</span> total_samples)</span>
+<span id="cb78-15"><a href="#cb78-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb78-16"><a href="#cb78-16" aria-hidden="true" tabindex="-1"></a>gene_freq_wide <span class="ot">&lt;-</span> gene_freq <span class="sc">|&gt;</span></span>
+<span id="cb78-17"><a href="#cb78-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(Hugo_Symbol, sample_type, freq) <span class="sc">|&gt;</span></span>
+<span id="cb78-18"><a href="#cb78-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(</span>
+<span id="cb78-19"><a href="#cb78-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">names_from =</span> sample_type,</span>
+<span id="cb78-20"><a href="#cb78-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">values_from =</span> freq</span>
+<span id="cb78-21"><a href="#cb78-21" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb78-22"><a href="#cb78-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb78-23"><a href="#cb78-23" aria-hidden="true" tabindex="-1"></a>gene_freq_wide</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 464 × 3
+   Hugo_Symbol Metastasis   Primary
+   &lt;chr&gt;            &lt;dbl&gt;     &lt;dbl&gt;
+ 1 ABL1          0.00763   0.00320 
+ 2 AC008738.1    0.000954 NA       
+ 3 ACVR1         0.00382   0.000641
+ 4 AGO2          0.00286   0.00448 
+ 5 AKT1          0.0544    0.0480  
+ 6 AKT2          0.00477   0.00192 
+ 7 AKT3          0.00477   0.00128 
+ 8 ALK           0.0162    0.00961 
+ 9 ALOX12B       0.00382   0.00512 
+10 AMER1         0.00859   0.00448 
+# ℹ 454 more rows</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb80"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb80-1"><a href="#cb80-1" aria-hidden="true" tabindex="-1"></a><span class="co"># creating long dataset</span></span>
+<span id="cb80-2"><a href="#cb80-2" aria-hidden="true" tabindex="-1"></a>gene_freq_long <span class="ot">&lt;-</span> gene_freq_wide <span class="sc">|&gt;</span></span>
+<span id="cb80-3"><a href="#cb80-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(</span>
+<span id="cb80-4"><a href="#cb80-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">cols =</span> <span class="fu">c</span>(<span class="st">"Primary"</span>, <span class="st">"Metastasis"</span>),</span>
+<span id="cb80-5"><a href="#cb80-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">names_to =</span> <span class="st">"Sample_Type"</span>,</span>
+<span id="cb80-6"><a href="#cb80-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">values_to =</span> <span class="st">"Frequency"</span></span>
+<span id="cb80-7"><a href="#cb80-7" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb80-8"><a href="#cb80-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb80-9"><a href="#cb80-9" aria-hidden="true" tabindex="-1"></a><span class="co"># prepare data for plotting</span></span>
+<span id="cb80-10"><a href="#cb80-10" aria-hidden="true" tabindex="-1"></a>top_genes <span class="ot">&lt;-</span> gene_freq_wide <span class="sc">|&gt;</span></span>
+<span id="cb80-11"><a href="#cb80-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_max</span>(Metastasis, <span class="at">n =</span> <span class="dv">10</span>) <span class="sc">|&gt;</span></span>
+<span id="cb80-12"><a href="#cb80-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pull</span>(Hugo_Symbol)</span>
+<span id="cb80-13"><a href="#cb80-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb80-14"><a href="#cb80-14" aria-hidden="true" tabindex="-1"></a>gene_freq_long_top <span class="ot">&lt;-</span> gene_freq_long <span class="sc">|&gt;</span></span>
+<span id="cb80-15"><a href="#cb80-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(Hugo_Symbol <span class="sc">%in%</span> top_genes)</span>
+<span id="cb80-16"><a href="#cb80-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb80-17"><a href="#cb80-17" aria-hidden="true" tabindex="-1"></a><span class="co"># plotingt the top genes</span></span>
+<span id="cb80-18"><a href="#cb80-18" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(gene_freq_long_top, <span class="fu">aes</span>(<span class="at">x =</span> Hugo_Symbol, <span class="at">y =</span> Frequency, <span class="at">fill =</span> Sample_Type)) <span class="sc">+</span></span>
+<span id="cb80-19"><a href="#cb80-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="at">position =</span> <span class="st">"dodge"</span>) <span class="sc">+</span></span>
+<span id="cb80-20"><a href="#cb80-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb80-21"><a href="#cb80-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Top 10 Breast Cancer Mutated Genes (Primary vs Metastasis)"</span>,</span>
+<span id="cb80-22"><a href="#cb80-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">"Gene"</span>,</span>
+<span id="cb80-23"><a href="#cb80-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">"Mutation Frequency"</span></span>
+<span id="cb80-24"><a href="#cb80-24" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb80-25"><a href="#cb80-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
+<span id="cb80-26"><a href="#cb80-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
+<span id="cb80-27"><a href="#cb80-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">45</span>, <span class="at">hjust =</span> <span class="dv">1</span>)</span>
+<span id="cb80-28"><a href="#cb80-28" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="DataExploration_files/figure-html/unnamed-chunk-23-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="cns-metastases-originating-from-breast-cancer-vs.-primary-cns-tumors" class="level1">
+<h1>CNS metastases originating from breast cancer vs.&nbsp;primary CNS tumors</h1>
+<p>We are now interested in the differences between primary CNS tumors and metastasis in the CNS that specifically originate from breast cancer. For that we define two groups:</p>
+<p><strong>A. CNS metastases from breast cancer</strong></p>
+<ul>
+<li><p>From <code>msk_met</code>:</p>
+<ul>
+<li><p><code>sample_type == "Metastasis"</code></p></li>
+<li><p><code>primary_tumor_site == "Breast"</code></p></li>
+<li><p><code>metastatic_site == "CNS/Brain"</code></p></li>
+</ul></li>
+</ul>
+<p><strong>B. Primary CNS tumors</strong></p>
+<ul>
+<li><p>From&nbsp;<code>msk_met</code> (or a separate CNS data set if available):</p>
+<ul>
+<li><p><code>sample_type == "Primary"</code></p></li>
+<li><p><code>cancer_type</code> = <code>"CNS/Brain"</code></p></li>
+</ul></li>
+</ul>
+<p>For Group B we take the TCGA data set because msk does not contain primary brain tumors. We start by loading the data:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb81"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb81-1"><a href="#cb81-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load TCGA primary brain tumors</span></span>
+<span id="cb81-2"><a href="#cb81-2" aria-hidden="true" tabindex="-1"></a>tcga_data <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(<span class="st">"../Data/frequently-mutated-genes.2026-03-09.tsv"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Rows: 711 Columns: 22
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: "\t"
+chr  (6): gene_id, symbol, name, cytoband, type, annotations
+dbl (16): num_cohort_ssm_affected_cases, num_cohort_ssm_cases, cohort_ssm_af...
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+</div>
+</div>
+<p>First, we link the mutations with the two groups</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb83"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb83-1"><a href="#cb83-1" aria-hidden="true" tabindex="-1"></a><span class="co"># CNS metastases from breast</span></span>
+<span id="cb83-2"><a href="#cb83-2" aria-hidden="true" tabindex="-1"></a>cns_met_breast <span class="ot">&lt;-</span> muts_met <span class="sc">|&gt;</span></span>
+<span id="cb83-3"><a href="#cb83-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">inner_join</span>(msk_met <span class="sc">|&gt;</span> </span>
+<span id="cb83-4"><a href="#cb83-4" aria-hidden="true" tabindex="-1"></a>               <span class="fu">filter</span>(sample_type <span class="sc">==</span> <span class="st">"Metastasis"</span>,</span>
+<span id="cb83-5"><a href="#cb83-5" aria-hidden="true" tabindex="-1"></a>                      primary_tumor_site <span class="sc">==</span> <span class="st">"Breast"</span>,</span>
+<span id="cb83-6"><a href="#cb83-6" aria-hidden="true" tabindex="-1"></a>                      metastatic_site <span class="sc">==</span> <span class="st">"CNS/Brain"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb83-7"><a href="#cb83-7" aria-hidden="true" tabindex="-1"></a>               <span class="fu">select</span>(sample_id, sample_type, primary_tumor_site, metastatic_site),</span>
+<span id="cb83-8"><a href="#cb83-8" aria-hidden="true" tabindex="-1"></a>             <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"Tumor_Sample_Barcode"</span> <span class="ot">=</span> <span class="st">"sample_id"</span>))</span>
+<span id="cb83-9"><a href="#cb83-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb83-10"><a href="#cb83-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Primary CNS tumors are ready from loaded data. We need the 'symbol' = Hugo symbol and 'cohort_ssm_affected_cases_persfentage' = frequency</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Next, we summarize mutation frequencies per gene</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb84"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb84-1"><a href="#cb84-1" aria-hidden="true" tabindex="-1"></a><span class="co"># CNS metastases from breast</span></span>
+<span id="cb84-2"><a href="#cb84-2" aria-hidden="true" tabindex="-1"></a>cns_met_breast_counts <span class="ot">&lt;-</span> cns_met_breast <span class="sc">|&gt;</span></span>
+<span id="cb84-3"><a href="#cb84-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>(Tumor_Sample_Barcode, Hugo_Symbol) <span class="sc">|&gt;</span></span>
+<span id="cb84-4"><a href="#cb84-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(Hugo_Symbol, <span class="at">name =</span> <span class="st">"n_samples"</span>) </span>
+<span id="cb84-5"><a href="#cb84-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb84-6"><a href="#cb84-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Primary CNS</span></span>
+<span id="cb84-7"><a href="#cb84-7" aria-hidden="true" tabindex="-1"></a>primary_cns_counts <span class="ot">&lt;-</span> tcga_data <span class="sc">|&gt;</span></span>
+<span id="cb84-8"><a href="#cb84-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">Hugo_Symbol =</span> symbol, <span class="at">freq_tcga =</span> cohort_ssm_affected_cases_percentage)</span>
+<span id="cb84-9"><a href="#cb84-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb84-10"><a href="#cb84-10" aria-hidden="true" tabindex="-1"></a>primary_cns_counts<span class="sc">$</span>freq_tcga <span class="ot">&lt;-</span> primary_cns_counts<span class="sc">$</span>freq_tcga <span class="sc">/</span> <span class="dv">100</span></span>
+<span id="cb84-11"><a href="#cb84-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb84-12"><a href="#cb84-12" aria-hidden="true" tabindex="-1"></a>n_cns_met_breast <span class="ot">&lt;-</span> <span class="fu">length</span>(<span class="fu">unique</span>(cns_met_breast<span class="sc">$</span>Tumor_Sample_Barcode))</span>
+<span id="cb84-13"><a href="#cb84-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb84-14"><a href="#cb84-14" aria-hidden="true" tabindex="-1"></a>cns_met_breast_counts <span class="ot">&lt;-</span> cns_met_breast_counts <span class="sc">|&gt;</span></span>
+<span id="cb84-15"><a href="#cb84-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">freq =</span> n_samples <span class="sc">/</span> n_cns_met_breast)</span>
+<span id="cb84-16"><a href="#cb84-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb84-17"><a href="#cb84-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Compare the two groups</span></span>
+<span id="cb84-18"><a href="#cb84-18" aria-hidden="true" tabindex="-1"></a>combined_freq <span class="ot">&lt;-</span> <span class="fu">full_join</span>(</span>
+<span id="cb84-19"><a href="#cb84-19" aria-hidden="true" tabindex="-1"></a>  cns_met_breast_counts <span class="sc">|&gt;</span> </span>
+<span id="cb84-20"><a href="#cb84-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rename</span>(<span class="at">freq_msk =</span> freq) <span class="sc">|&gt;</span>      <span class="co"># make sure the column is called freq_msk</span></span>
+<span id="cb84-21"><a href="#cb84-21" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(Hugo_Symbol, freq_msk),</span>
+<span id="cb84-22"><a href="#cb84-22" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb84-23"><a href="#cb84-23" aria-hidden="true" tabindex="-1"></a>  primary_cns_counts <span class="sc">|&gt;</span></span>
+<span id="cb84-24"><a href="#cb84-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(Hugo_Symbol, freq_tcga),</span>
+<span id="cb84-25"><a href="#cb84-25" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb84-26"><a href="#cb84-26" aria-hidden="true" tabindex="-1"></a>  <span class="at">by =</span> <span class="st">"Hugo_Symbol"</span></span>
+<span id="cb84-27"><a href="#cb84-27" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span></span>
+<span id="cb84-28"><a href="#cb84-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">replace_na</span>(<span class="fu">list</span>(<span class="at">freq_msk =</span> <span class="dv">0</span>, <span class="at">freq_tcga =</span> <span class="dv">0</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="short-visualization" class="level2">
+<h2 class="anchored" data-anchor-id="short-visualization">Short visualization</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb85"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb85-1"><a href="#cb85-1" aria-hidden="true" tabindex="-1"></a>combined_long <span class="ot">&lt;-</span> combined_freq <span class="sc">|&gt;</span></span>
+<span id="cb85-2"><a href="#cb85-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="at">cols =</span> <span class="fu">c</span>(freq_msk, freq_tcga),</span>
+<span id="cb85-3"><a href="#cb85-3" aria-hidden="true" tabindex="-1"></a>               <span class="at">names_to =</span> <span class="st">"Cohort"</span>,</span>
+<span id="cb85-4"><a href="#cb85-4" aria-hidden="true" tabindex="-1"></a>               <span class="at">values_to =</span> <span class="st">"Frequency"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb85-5"><a href="#cb85-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Cohort =</span> <span class="fu">recode</span>(Cohort,</span>
+<span id="cb85-6"><a href="#cb85-6" aria-hidden="true" tabindex="-1"></a>                         <span class="at">freq_msk =</span> <span class="st">"CNS Metastasis (Breast)"</span>,</span>
+<span id="cb85-7"><a href="#cb85-7" aria-hidden="true" tabindex="-1"></a>                         <span class="at">freq_tcga =</span> <span class="st">"Primary CNS"</span>))</span>
+<span id="cb85-8"><a href="#cb85-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb85-9"><a href="#cb85-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Top 10 genes in CNS metastases</span></span>
+<span id="cb85-10"><a href="#cb85-10" aria-hidden="true" tabindex="-1"></a>top_genes <span class="ot">&lt;-</span> combined_freq <span class="sc">|&gt;</span></span>
+<span id="cb85-11"><a href="#cb85-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_max</span>(freq_msk, <span class="at">n =</span> <span class="dv">10</span>) <span class="sc">|&gt;</span></span>
+<span id="cb85-12"><a href="#cb85-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pull</span>(Hugo_Symbol)</span>
+<span id="cb85-13"><a href="#cb85-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb85-14"><a href="#cb85-14" aria-hidden="true" tabindex="-1"></a>combined_long_top <span class="ot">&lt;-</span> combined_long <span class="sc">|&gt;</span></span>
+<span id="cb85-15"><a href="#cb85-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(Hugo_Symbol <span class="sc">%in%</span> top_genes)</span>
+<span id="cb85-16"><a href="#cb85-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb85-17"><a href="#cb85-17" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(combined_long_top, <span class="fu">aes</span>(<span class="at">x =</span> Hugo_Symbol, <span class="at">y =</span> Frequency, <span class="at">fill =</span> Cohort)) <span class="sc">+</span></span>
+<span id="cb85-18"><a href="#cb85-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="at">position =</span> <span class="st">"dodge"</span>) <span class="sc">+</span></span>
+<span id="cb85-19"><a href="#cb85-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb85-20"><a href="#cb85-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Mutation Frequencies in CNS Breast Metastases vs Primary CNS Tumors"</span>,</span>
+<span id="cb85-21"><a href="#cb85-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">"Gene"</span>,</span>
+<span id="cb85-22"><a href="#cb85-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">"Mutation Frequency"</span></span>
+<span id="cb85-23"><a href="#cb85-23" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb85-24"><a href="#cb85-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
+<span id="cb85-25"><a href="#cb85-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">45</span>, <span class="at">hjust =</span> <span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="DataExploration_files/figure-html/unnamed-chunk-27-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="statistical-test-fishers-exact-test" class="level2">
+<h2 class="anchored" data-anchor-id="statistical-test-fishers-exact-test">Statistical test (Fisher’s exact test)</h2>
+<p>For each mutation we perform a Fisher’s exact test to see it there is a significant difference between primary CNS cancer and those metastasizing from breast cancer.</p>
+<p>We prepare the count values for the</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb86"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb86-1"><a href="#cb86-1" aria-hidden="true" tabindex="-1"></a><span class="co"># we have already prepared the count values for the metastasis</span></span>
+<span id="cb86-2"><a href="#cb86-2" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(cns_met_breast_counts)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 168
+Columns: 3
+$ Hugo_Symbol &lt;chr&gt; "ANKRD11", "APC", "ARAF", "ARID1A", "ARID1B", "ARID2", "AS…
+$ n_samples   &lt;int&gt; 2, 1, 1, 3, 1, 1, 1, 1, 1, 1, 2, 1, 1, 2, 2, 1, 1, 1, 2, 3…
+$ freq        &lt;dbl&gt; 0.04761905, 0.02380952, 0.02380952, 0.07142857, 0.02380952…</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb88"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb88-1"><a href="#cb88-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Prepare the tcga primary cns tumor count values</span></span>
+<span id="cb88-2"><a href="#cb88-2" aria-hidden="true" tabindex="-1"></a>cns_primary_counts <span class="ot">&lt;-</span> tcga_data <span class="sc">|&gt;</span> </span>
+<span id="cb88-3"><a href="#cb88-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(</span>
+<span id="cb88-4"><a href="#cb88-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">Hugo_Symbol =</span> symbol,</span>
+<span id="cb88-5"><a href="#cb88-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">n_samples =</span> num_cohort_ssm_affected_cases,</span>
+<span id="cb88-6"><a href="#cb88-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">freq =</span> cohort_ssm_affected_cases_percentage</span>
+<span id="cb88-7"><a href="#cb88-7" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb88-8"><a href="#cb88-8" aria-hidden="true" tabindex="-1"></a>cns_primary_counts<span class="sc">$</span>freq <span class="ot">&lt;-</span> cns_primary_counts<span class="sc">$</span>freq <span class="sc">/</span> <span class="dv">100</span> <span class="co"># percentage -&gt; frequency</span></span>
+<span id="cb88-9"><a href="#cb88-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb88-10"><a href="#cb88-10" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(cns_primary_counts)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 711
+Columns: 3
+$ Hugo_Symbol &lt;chr&gt; "IDH1", "TP53", "ATRX", "CIC", "FUBP1", "PIK3CA", "MUC16",…
+$ n_samples   &lt;dbl&gt; 394, 240, 187, 110, 45, 41, 41, 38, 31, 29, 25, 24, 22, 21…
+$ freq        &lt;dbl&gt; 0.7680, 0.4678, 0.3645, 0.2144, 0.0877, 0.0799, 0.0799, 0.…</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb90"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb90-1"><a href="#cb90-1" aria-hidden="true" tabindex="-1"></a><span class="co"># merging the cont data from primary and metstasis into one data set</span></span>
+<span id="cb90-2"><a href="#cb90-2" aria-hidden="true" tabindex="-1"></a>cns_all_counts <span class="ot">&lt;-</span> <span class="fu">full_join</span>(</span>
+<span id="cb90-3"><a href="#cb90-3" aria-hidden="true" tabindex="-1"></a>  cns_met_breast_counts <span class="sc">|&gt;</span> <span class="fu">rename</span>(<span class="at">n_msk =</span> n_samples, <span class="at">freq_msk =</span> freq),</span>
+<span id="cb90-4"><a href="#cb90-4" aria-hidden="true" tabindex="-1"></a>  cns_primary_counts <span class="sc">|&gt;</span> <span class="fu">rename</span>(<span class="at">n_tcga =</span> n_samples, <span class="at">freq_tcga =</span> freq),</span>
+<span id="cb90-5"><a href="#cb90-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">by =</span> <span class="st">"Hugo_Symbol"</span></span>
+<span id="cb90-6"><a href="#cb90-6" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span></span>
+<span id="cb90-7"><a href="#cb90-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">replace_na</span>(<span class="fu">list</span>(<span class="at">n_msk =</span> <span class="dv">0</span>, <span class="at">n_tcga =</span> <span class="dv">0</span>, <span class="at">freq_msk =</span> <span class="dv">0</span>, <span class="at">freq_tcga =</span> <span class="dv">0</span>))</span>
+<span id="cb90-8"><a href="#cb90-8" aria-hidden="true" tabindex="-1"></a><span class="do">#### IS IT REASONABLE TO DEAL WITH NA LIKE THIS? -&gt; ASK KEVIN</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb91"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb91-1"><a href="#cb91-1" aria-hidden="true" tabindex="-1"></a><span class="co"># MSK CNS breast metastases</span></span>
+<span id="cb91-2"><a href="#cb91-2" aria-hidden="true" tabindex="-1"></a>total_msk <span class="ot">&lt;-</span> <span class="fu">length</span>(<span class="fu">unique</span>(cns_met_breast<span class="sc">$</span>Tumor_Sample_Barcode))</span>
+<span id="cb91-3"><a href="#cb91-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb91-4"><a href="#cb91-4" aria-hidden="true" tabindex="-1"></a><span class="co"># TCGA CNS primary tumors</span></span>
+<span id="cb91-5"><a href="#cb91-5" aria-hidden="true" tabindex="-1"></a>total_tcga <span class="ot">&lt;-</span> <span class="fu">unique</span>(tcga_data<span class="sc">$</span>num_cohort_ssm_cases)[<span class="dv">1</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb92"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb92-1"><a href="#cb92-1" aria-hidden="true" tabindex="-1"></a><span class="co"># building the contigency table and add the p value of the fisher's exact test to the data</span></span>
+<span id="cb92-2"><a href="#cb92-2" aria-hidden="true" tabindex="-1"></a>gene_tests <span class="ot">&lt;-</span> cns_all_counts <span class="sc">|&gt;</span></span>
+<span id="cb92-3"><a href="#cb92-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rowwise</span>() <span class="sc">|&gt;</span></span>
+<span id="cb92-4"><a href="#cb92-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb92-5"><a href="#cb92-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">freq_diff =</span> freq_msk <span class="sc">-</span> freq_tcga,</span>
+<span id="cb92-6"><a href="#cb92-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">p_value =</span> <span class="fu">fisher.test</span>(<span class="fu">matrix</span>(</span>
+<span id="cb92-7"><a href="#cb92-7" aria-hidden="true" tabindex="-1"></a>      <span class="fu">c</span>(</span>
+<span id="cb92-8"><a href="#cb92-8" aria-hidden="true" tabindex="-1"></a>        n_msk,</span>
+<span id="cb92-9"><a href="#cb92-9" aria-hidden="true" tabindex="-1"></a>        total_msk <span class="sc">-</span> n_msk,</span>
+<span id="cb92-10"><a href="#cb92-10" aria-hidden="true" tabindex="-1"></a>        n_tcga,</span>
+<span id="cb92-11"><a href="#cb92-11" aria-hidden="true" tabindex="-1"></a>        total_tcga <span class="sc">-</span> n_tcga</span>
+<span id="cb92-12"><a href="#cb92-12" aria-hidden="true" tabindex="-1"></a>      ),</span>
+<span id="cb92-13"><a href="#cb92-13" aria-hidden="true" tabindex="-1"></a>      <span class="at">ncol =</span> <span class="dv">2</span></span>
+<span id="cb92-14"><a href="#cb92-14" aria-hidden="true" tabindex="-1"></a>    ))<span class="sc">$</span>p.value</span>
+<span id="cb92-15"><a href="#cb92-15" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb92-16"><a href="#cb92-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">|&gt;</span>   <span class="co"># VERY IMPORTANT</span></span>
+<span id="cb92-17"><a href="#cb92-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb92-18"><a href="#cb92-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">p_adj =</span> <span class="fu">p.adjust</span>(p_value, <span class="at">method =</span> <span class="st">"BH"</span>)</span>
+<span id="cb92-19"><a href="#cb92-19" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb92-20"><a href="#cb92-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb92-21"><a href="#cb92-21" aria-hidden="true" tabindex="-1"></a><span class="co"># look at the siginficant mutations</span></span>
+<span id="cb92-22"><a href="#cb92-22" aria-hidden="true" tabindex="-1"></a>gene_tests <span class="sc">|&gt;</span></span>
+<span id="cb92-23"><a href="#cb92-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(p_adj <span class="sc">&lt;</span> <span class="fl">0.05</span>) <span class="sc">|&gt;</span></span>
+<span id="cb92-24"><a href="#cb92-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(p_adj)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 12 × 8
+   Hugo_Symbol n_msk freq_msk n_tcga freq_tcga freq_diff  p_value    p_adj
+   &lt;chr&gt;       &lt;int&gt;    &lt;dbl&gt;  &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;    &lt;dbl&gt;
+ 1 IDH1            0   0         394    0.768    -0.768  3.67e-25 2.81e-22
+ 2 ATRX            0   0         187    0.365    -0.365  1.93e- 8 7.37e- 6
+ 3 MAP2K4          5   0.119       0    0         0.119  1.97e- 6 3.77e- 4
+ 4 TBX3            5   0.119       0    0         0.119  1.97e- 6 3.77e- 4
+ 5 CDH1            6   0.143       2    0.0039    0.139  3.31e- 6 5.06e- 4
+ 6 GATA3           7   0.167       5    0.0097    0.157  5.17e- 6 6.58e- 4
+ 7 ERBB3           5   0.119       1    0.0019    0.117  1.12e- 5 1.07e- 3
+ 8 PIK3CA         14   0.333      41    0.0799    0.253  1.11e- 5 1.07e- 3
+ 9 CIC             0   0         110    0.214    -0.214  8.28e- 5 7.03e- 3
+10 CBFB            3   0.0714      0    0         0.0714 4.05e- 4 2.58e- 2
+11 FGFR4           4   0.0952      2    0.0039    0.0913 3.83e- 4 2.58e- 2
+12 IRS1            3   0.0714      0    0         0.0714 4.05e- 4 2.58e- 2</code></pre>
+</div>
+</div>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
