@@ -274,8 +274,6 @@ def create_Theta_extended(
         omega_m=omega_m,
     )
 
-create_theta_extended = create_Theta_extended
-
 
 def create_Theta_extended_from_flat_params(params: jnp.ndarray, n_total: int, m: int = 1) -> Theta_extended:
     """
