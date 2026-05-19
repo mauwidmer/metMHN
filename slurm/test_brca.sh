@@ -2,9 +2,9 @@
 #SBATCH --ntasks=1 --cpus-per-task=4
 #SBATCH --time=02:00:00
 #SBATCH --mem-per-cpu=2G
-#SBATCH --job-name=rec_5000_4
-#SBATCH --output=tmp/rec_5000_4.out
-#SBATCH --error=tmp/rec_5000_4.err
+#SBATCH --job-name=rec_5000_brca
+#SBATCH --output=tmp/rec_5000_brca.out
+#SBATCH --error=tmp/rec_5000_brca.err
 
 module load gcc/12.2.0
 module load cuda/12.1.1

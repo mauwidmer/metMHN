@@ -79,7 +79,7 @@ penal_weights = utils.cross_val(dat=dat,
 best_lam = lams[np.argmax(np.mean(penal_weights, axis=0))]
 
 df_cv = pd.DataFrame(penal_weights, columns=lams)
-df_cv.to_csv("../results/luad/cross_validation_results_4.csv", index=False)
+df_cv.to_csv("../results/brca/cross_validation_results.csv", index=False)
 
 th_init, dp_init, dm_init = utils.indep(dat)
 theta, d_p, d_m= reg_opt.learn_mhn(th_init=th_init,
@@ -96,7 +96,7 @@ theta, d_p, d_m= reg_opt.learn_mhn(th_init=th_init,
 # Log final likelihood
 final_loglik = reg_opt.score(theta, d_p, d_m, dat, perc_met=0.2)
 df_loglik = pd.DataFrame({"final_loglik": [float(final_loglik)]})
-df_loglik.to_csv("../results/luad/final_loglik_4.csv", index=False)
+df_loglik.to_csv("../results/brca/final_loglik.csv", index=False)
 
 th_plot = np.row_stack((d_p.reshape((1,-1)),
                         d_m.reshape((1,-1)),
@@ -107,4 +107,4 @@ utils.plot_theta(ax1, ax2, th_plot, events_plot, alpha=0.2, font_size=5)
 plt.show()
 
 df2 = pd.DataFrame(th_plot, columns=events_plot)
-df2.to_csv("../results/luad/luad_g14_10muts_4.csv")
+df2.to_csv("../results/brca/brca_g14_10muts.csv")
