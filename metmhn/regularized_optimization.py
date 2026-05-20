@@ -170,7 +170,7 @@ class Theta_extended:
     omega_g : jnp.ndarray
         n vector - observation effects in primary tumours.
     omega_m : jnp.ndarray
-        n+1 x m matrix - observation effects in metastasis locations .
+        n x m matrix - observation effects in metastasis locations .
 
     """
 
@@ -207,7 +207,7 @@ class Theta_extended_grad:
     grad_omega_g : jnp.ndarray
         Shape (n,), gradient wrt omega_g (observation effects in primary tumors).
     grad_omega_m : jnp.ndarray
-        Shape (n+1, m), gradient wrt omega_m (observation effects in metastases).
+        Shape (n, m), gradient wrt omega_m (observation effects in metastases).
     """
     grad_theta_g: jnp.ndarray
     grad_theta_met_br: jnp.ndarray
@@ -251,8 +251,8 @@ def create_Theta_extended(
 
     if omega_m.ndim != 2:
         raise ValueError("omega_m must be a matrix")
-    if omega_m.shape != (n + 1, m):
-        raise ValueError(f"omega_m must have shape ({n + 1}, {m})")
+    if omega_m.shape != (n, m):
+        raise ValueError(f"omega_m must have shape ({n}, {m})")
 
     if theta_loc_gm.ndim != 2 or theta_loc_gm.shape[0] != n:
         raise ValueError(f"theta_loc_gm must be a matrix with {n} rows")
@@ -282,6 +282,9 @@ def create_Theta_extended_from_flat_params(params: jnp.ndarray, n_total: int, m:
     This is a backward-compatible helper used by score_and_grad_reg when the
     optimization parameter vector still contains only log_theta, log_d_p, and log_d_m.
     """
+    expected_len = n_total**2 + n_total + n_total*m
+    assert expected_len == len(params)
+
     theta_g = jnp.array(params[0:n_total**2]).reshape((n_total, n_total))
     theta_met_br = jnp.array([theta_g[-1, -1]])
     theta_gm = jnp.zeros(n_total)
@@ -414,9 +417,14 @@ def reparametrization_to_raw_params(
         theta_extended.theta_g[:-1, -1] * grad_last_col
     )
 
-    grad_omega_g = grad_d_p[:-1]
-    grad_omega_m = jnp.zeros((n + 1, m))
+    grad_omega_g = grad_d_p
+    grad_omega_m = jnp.zeros((n, m))
     grad_omega_m = grad_omega_m.at[:, met_loc].set(grad_d_m)
+
+    assert grad_d_m.shape == (n,)
+    assert grad_omega_m.shape == (n, m)
+    assert grad_theta_g.shape == theta_extended.theta_g.shape
+    assert theta_extended.omega_m.shape == (n, m)
 
     return Theta_extended_grad(
         grad_theta_g=grad_theta_g,
