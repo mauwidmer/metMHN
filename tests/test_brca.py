@@ -8,6 +8,7 @@ import jax as jax
 jax.config.update("jax_enable_x64", True)
 import matplotlib.pyplot as plt
 import logging
+import os
 
 # Adapt path to where logs should be kept
 logging.basicConfig(filename='../../logs/analysis_example.log',
@@ -79,6 +80,8 @@ penal_weights = utils.cross_val(dat=dat,
 best_lam = lams[np.argmax(np.mean(penal_weights, axis=0))]
 
 df_cv = pd.DataFrame(penal_weights, columns=lams)
+
+os.makedirs("../results/brca", exist_ok=True) # Create the directory if it doesn't exist
 df_cv.to_csv("../results/brca/cross_validation_results.csv", index=False)
 
 th_init, dp_init, dm_init = utils.indep(dat)

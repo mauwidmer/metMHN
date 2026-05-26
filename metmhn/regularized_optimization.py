@@ -130,15 +130,15 @@ def symmetric_penal4(params: np.array, n_total: int, eps=1e-05):
     grad_theta = jnp.zeros_like(log_theta)
 
     # core gradient
-    grad_core = sym_penal_(log_theta_core)
+    grad_core = sym_penal_(log_theta_core).reshape(log_theta_core.shape)
     grad_theta = grad_theta.at[:-1, :-1].set(grad_core)
 
     # row gradient (asymmetric)
-    grad_row = L1_(log_theta_row)
+    grad_row = L1_(log_theta_row).reshape(-1)
     grad_theta = grad_theta.at[-1, :-1].set(grad_row)
 
     # column gradient (asymmetric)
-    grad_col = L1_(log_theta_col)
+    grad_col = L1_(log_theta_col).reshape(-1)
     grad_theta = grad_theta.at[:-1, -1].set(grad_col)
 
     # flatten theta gradient
@@ -156,7 +156,7 @@ class Theta_extended:
     Attributes
     ----------
     theta_g : np.ndarray
-        An n x n matrix - Genomic interactions and base rates
+        An n x n matrix - Genomic interactions
     theta_met_br : jnp.ndarray
         An m vector - base rates of seeding to the different tissues
     theta_gm : jnp.ndarray
@@ -282,17 +282,31 @@ def create_Theta_extended_from_flat_params(params: jnp.ndarray, n_total: int, m:
     This is a backward-compatible helper used by score_and_grad_reg when the
     optimization parameter vector still contains only log_theta, log_d_p, and log_d_m.
     """
-    expected_len = n_total**2 + n_total + n_total*m
-    assert expected_len == len(params)
+    n_mut = n_total - 1
 
-    theta_g = jnp.array(params[0:n_total**2]).reshape((n_total, n_total))
-    theta_met_br = jnp.array([theta_g[-1, -1]])
-    theta_gm = jnp.zeros(n_total)
-    theta_mg = jnp.zeros(n_total)
-    theta_loc_gm = jnp.ones((n_total, m))
-    theta_loc_mg = jnp.ones((n_total, m))
-    omega_g = jnp.array(params[n_total**2:n_total*(n_total + 1)])
-    omega_m = jnp.array(params[n_total*(n_total+1):]).reshape((n_total, m))
+    idx = 0
+
+    theta_g = params[idx:idx+n_mut**2].reshape((n_mut, n_mut))
+    idx += n_mut**2
+
+    theta_met_br = params[idx:idx+1]
+    idx += 1
+
+    theta_gm = params[idx:idx+n_mut]
+    idx += n_mut
+
+    theta_mg = params[idx:idx+n_mut]
+    idx += n_mut
+
+    omega_g = params[idx:idx+n_total]
+    idx += n_total
+
+    omega_m = params[idx:idx+n_total*m].reshape((n_total, m))
+    idx += n_total * m
+
+    theta_loc_gm = jnp.ones((n_mut, m))
+    theta_loc_mg = jnp.ones((n_mut, m))
+
     return Theta_extended(
         theta_g=theta_g,
         theta_met_br=theta_met_br,
@@ -320,17 +334,30 @@ def reparametrization(theta_extended: Theta_extended) -> jnp.ndarray:
         jnp.ndarray: Reparameterized theta matrices with shape (m, n, n),
                     where m is the number of metastasis locations.
     """
-    n = theta_extended.theta_g.shape[0]
+    n_mut = theta_extended.theta_g.shape[0]
     m = theta_extended.theta_loc_gm.shape[1]
 
-    theta_base = theta_extended.theta_g
-    theta_rep = jnp.tile(theta_base[None, :, :], (m, 1, 1))
+    theta_rep = jnp.zeros((m, n_mut+1, n_mut+1))
 
-    scaled_last_row = theta_extended.theta_loc_gm[:-1, :].T * theta_base[-1, :-1][None, :]
-    scaled_last_col = (theta_base[:-1, -1][:, None] * theta_extended.theta_loc_mg[:-1, :]).T
+    # genomic block
+    theta_rep = theta_rep.at[:, :-1, :-1].set(theta_extended.theta_g)
 
-    theta_rep = theta_rep.at[:, -1, :-1].set(scaled_last_row)
-    theta_rep = theta_rep.at[:, :-1, -1].set(scaled_last_col)
+    # metastasis row
+    scaled_row = (
+        theta_extended.theta_loc_gm.T * theta_extended.theta_gm[None, :]
+    )
+
+    theta_rep = theta_rep.at[:, -1, :-1].set(scaled_row)
+    
+    # metastasis column
+    scaled_col = (
+        theta_extended.theta_loc_mg.T * theta_extended.theta_mg[None, :]
+    )
+
+    theta_rep = theta_rep.at[:, :-1, -1].set(scaled_col)
+
+    # bottom-right
+    theta_rep = theta_rep.at[:, -1, -1].set(theta_extended.theta_met_br)
 
     return theta_rep
 
@@ -346,26 +373,23 @@ def reparametrization_(theta_extended: Theta_extended, grad_rep: jnp.ndarray) ->
     Returns:
         jnp.ndarray: Gradient with respect to the original theta matrix.
     """
-    n = theta_extended.theta_g.shape[0]
+    n_mut = theta_extended.theta_g.shape[0]
+    n_total = n_mut + 1
     m = theta_extended.theta_loc_gm.shape[1]
 
-    if grad_rep.shape != (m, n, n):
-        raise ValueError(f"grad_rep must have shape {(m, n, n)}, got {grad_rep.shape}")
+    if grad_rep.shape != (m, n_total, n_total):
+        raise ValueError(f"grad_rep must have shape {(m, n_total, n_total)}, got {grad_rep.shape}")
 
-    grad_theta = jnp.zeros((n, n))
+    grad_theta = jnp.zeros((n_total, n_total))
 
     # top-left block is copied unchanged for every location
     grad_theta = grad_theta.at[:-1, :-1].set(jnp.sum(grad_rep[:, :-1, :-1], axis=0))
 
     # last row entries depend on the original last row scaled by theta_loc_gm
-    grad_theta = grad_theta.at[-1, :-1].set(
-        jnp.sum(grad_rep[:, -1, :-1] * theta_extended.theta_loc_gm[:-1, :].T, axis=0)
-    )
+    grad_theta = grad_theta.at[-1, :-1].set(jnp.sum(grad_rep[:, -1, :-1] * theta_extended.theta_loc_gm.T, axis=0))
 
     # last column entries depend on the original last column scaled by theta_loc_mg
-    grad_theta = grad_theta.at[:-1, -1].set(
-        jnp.sum(grad_rep[:, :-1, -1] * theta_extended.theta_loc_mg[:-1, :].T, axis=0)
-    )
+    grad_theta = grad_theta.at[:-1, -1].set(jnp.sum(grad_rep[:, :-1, -1] * theta_extended.theta_loc_mg.T, axis=0))
 
     # bottom-right element is shared across every location matrix
     grad_theta = grad_theta.at[-1, -1].set(jnp.sum(grad_rep[:, -1, -1]))
@@ -393,7 +417,8 @@ def reparametrization_to_raw_params(
     Returns:
         Theta_extended_grad: Gradients for all raw parameters.
     """
-    n = theta_extended.theta_g.shape[0]
+    n_mut = theta_extended.theta_g.shape[0]
+    n_total = n_mut + 1
     m = theta_extended.theta_loc_gm.shape[1]
 
     grad_theta_g = grad_rep[:-1, :-1]
@@ -402,29 +427,30 @@ def reparametrization_to_raw_params(
     grad_last_row = grad_rep[-1, :-1]
     grad_last_col = grad_rep[:-1, -1]
 
-    grad_theta_gm = jnp.zeros_like(theta_extended.theta_gm)
-    grad_theta_mg = jnp.zeros_like(theta_extended.theta_mg)
-    # Current reparameterization only uses location-specific effects in theta_loc_gm / theta_loc_mg.
-    # theta_gm and theta_mg are not part of this particular reparametrization, so their gradients remain zero.
+    grad_theta_gm = (theta_extended.theta_loc_gm[:, met_loc] * grad_last_row)
+    grad_theta_mg = (theta_extended.theta_loc_mg[:, met_loc] * grad_last_col)
 
-    grad_theta_loc_gm = jnp.zeros((n, m))
-    grad_theta_loc_gm = grad_theta_loc_gm.at[:-1, met_loc].set(
-        theta_extended.theta_g[-1, :-1] * grad_last_row
-    )
+    grad_theta_loc_gm = jnp.zeros((n_mut, m))
+    grad_theta_loc_gm = grad_theta_loc_gm.at[:, met_loc].set(theta_extended.theta_gm * grad_last_row)
 
-    grad_theta_loc_mg = jnp.zeros((n, m))
-    grad_theta_loc_mg = grad_theta_loc_mg.at[:-1, met_loc].set(
-        theta_extended.theta_g[:-1, -1] * grad_last_col
-    )
+    grad_theta_loc_mg = jnp.zeros((n_mut, m))
+    grad_theta_loc_mg = grad_theta_loc_mg.at[:, met_loc].set(theta_extended.theta_mg * grad_last_col)
 
     grad_omega_g = grad_d_p
-    grad_omega_m = jnp.zeros((n, m))
+    grad_omega_m = jnp.zeros((n_total, m))
     grad_omega_m = grad_omega_m.at[:, met_loc].set(grad_d_m)
 
-    assert grad_d_m.shape == (n,)
-    assert grad_omega_m.shape == (n, m)
+    assert grad_d_m.shape == (n_total,)
+    assert grad_omega_m.shape == (n_total, m)
+
     assert grad_theta_g.shape == theta_extended.theta_g.shape
-    assert theta_extended.omega_m.shape == (n, m)
+    assert grad_theta_gm.shape == theta_extended.theta_gm.shape
+    assert grad_theta_mg.shape == theta_extended.theta_mg.shape
+
+    assert grad_theta_loc_gm.shape == theta_extended.theta_loc_gm.shape
+    assert grad_theta_loc_mg.shape == theta_extended.theta_loc_mg.shape
+
+    assert theta_extended.omega_m.shape == (n_total, m)
 
     return Theta_extended_grad(
         grad_theta_g=grad_theta_g,
@@ -452,14 +478,14 @@ def composite_penalty(theta_extended: Theta_extended, lam: float, c: jnp.ndarray
     n = theta_extended.theta_g.shape[0]
 
     # --- composite penalty ---
-    theta = theta_extended.theta_g[:-1, :-1]
+    theta = theta_extended.theta_g
 
     composite_penalty_value = 0
 
     for i in range(theta_extended.theta_loc_gm.shape[1]):
         composite_penalty_value += (
-            lam * c[i] * L1(theta_extended.theta_g[-1, :-1]) +
-            lam * c[i] * L1(theta_extended.theta_g[:-1, -1]) +
+            lam * c[i] * L1(theta_extended.theta_gm) +
+            lam * c[i] * L1(theta_extended.theta_mg) +
             (1 - c[i]) * L1(theta_extended.theta_loc_gm[:, i]) +
             (1 - c[i]) * L1(theta_extended.theta_loc_mg[:, i])
         )
@@ -493,7 +519,7 @@ def composite_penalty_(theta_extended: Theta_extended, lam: float, c: jnp.ndarra
     n = theta_extended.theta_g.shape[0]
 
     # --- composite penalty gradient ---
-    theta = theta_extended.theta_g[:-1, :-1]
+    theta = theta_extended.theta_g
 
     # Gradient from lam * L1(theta) in top-left block
     grad_theta_main = lam * L1_(theta).reshape(theta.shape)
@@ -509,7 +535,7 @@ def composite_penalty_(theta_extended: Theta_extended, lam: float, c: jnp.ndarra
     grad_full = grad_full.at[-1, :-1].set(grad_last_row)
     grad_full = grad_full.at[:-1, -1].set(grad_last_col)
 
-    return grad_full.flatten()
+    return grad_full
 
 def score(log_theta: jnp.ndarray, log_d_p: jnp.ndarray, log_d_m: jnp.ndarray, dat: jnp.ndarray, 
           perc_met: float)-> jnp.ndarray:
@@ -619,12 +645,11 @@ def score_reg(params: np.ndarray, dat: jnp.ndarray, perc_met: float, penal: Call
     return np.array(-sc + w_penal*pen)
 
 
-def score_and_grad(log_theta: jnp.ndarray, log_d_p: jnp.ndarray, log_d_m: jnp.ndarray, dat: jnp.ndarray, 
+def score_and_grad(log_d_p: jnp.ndarray, log_d_m: jnp.ndarray, dat: jnp.ndarray, 
                    perc_met: float, theta_extended: Theta_extended, fixed_grad: bool = False)->tuple[jnp.ndarray, list[Theta_extended_grad]]:
     """Calculates the log. likelihood and its gradient of the dataset dat
 
     Args:
-        log_theta (jnp.ndarray): (n+1)x(n+1)-dimensional Theta matrix with logarithmic entries
         log_d_p (jnp.ndarray): (n+1)-dimensional vector with logarithmic effects of events in the PT on the rate of its observation event
         log_d_m (jnp.ndarray): (n+1)-dimensional vector with logarithmic effects of events in the MT on the rate of its observation event
         dat (jnp.ndarray): Matrix of observations dimension (n_dat x (2n+3)), rows correspond to patients and columns to events.
@@ -638,8 +663,11 @@ def score_and_grad(log_theta: jnp.ndarray, log_d_p: jnp.ndarray, log_d_m: jnp.nd
     Returns:
         tuple[np.array, list[Theta_extended_grad]]: Log. likelihood, list of Theta_extended_grad objects (one per datapoint) with gradients wrt raw parameters
     """
+    theta_rep = reparametrization(theta_extended)[0]
+
     n_mut = (dat.shape[1]-3)//2
     n_total = n_mut + 1
+
     score, score_pt = 0., 0.
     d_th, d_th_pt = jnp.zeros((n_total, n_total)), jnp.zeros((n_total, n_total))
     d_d_p, d_d_p_pt = jnp.zeros(n_total), jnp.zeros(n_total) 
@@ -657,7 +685,7 @@ def score_and_grad(log_theta: jnp.ndarray, log_d_p: jnp.ndarray, log_d_m: jnp.nd
         tmp = dat_po[dat_po[:,:-2:2].sum(axis=1)==i, :-2:2]
         if i == 0:
             n_az = tmp.shape[0]
-            lik, th_, dp_ = ssr._grad_prim_obs_az(log_theta)
+            lik, th_, dp_ = ssr._grad_prim_obs_az(theta_rep)
             for j in range(n_az):
                 grad_rep_list.append(th_)
                 grad_dp_list.append(dp_)
@@ -667,7 +695,7 @@ def score_and_grad(log_theta: jnp.ndarray, log_d_p: jnp.ndarray, log_d_m: jnp.nd
             d_th_pt += n_az * th_
             d_d_p_pt += n_az * dp_
         else:
-            lik, th_, dp_ = vmap(ssr._grad_prim_obs, (None, None, 0, None), out_axes=(0))(log_theta, log_d_p, tmp, int(i))
+            lik, th_, dp_ = vmap(ssr._grad_prim_obs, (None, None, 0, None), out_axes=(0))(theta_rep, log_d_p, tmp, int(i))
             for j in range(len(lik)):
                 grad_rep_list.append(th_[j])
                 grad_dp_list.append(dp_[j])
@@ -682,7 +710,7 @@ def score_and_grad(log_theta: jnp.ndarray, log_d_p: jnp.ndarray, log_d_m: jnp.nd
     n_active = jnp.unique(dat_pm[:,:-2:2].sum(axis=1))
     for i in n_active:
         tmp = dat_pm[dat_pm[:,:-2:2].sum(axis=1)==i, :-2:2]
-        lik, th_, dp_ = vmap(ssr._grad_prim_obs, (None, None, 0, None), out_axes=(0))(log_theta, log_d_p, tmp, int(i))
+        lik, th_, dp_ = vmap(ssr._grad_prim_obs, (None, None, 0, None), out_axes=(0))(theta_rep, log_d_p, tmp, int(i))
         for j in range(len(lik)):
             grad_rep_list.append(th_[j])
             grad_dp_list.append(dp_[j])
@@ -698,7 +726,7 @@ def score_and_grad(log_theta: jnp.ndarray, log_d_p: jnp.ndarray, log_d_m: jnp.nd
     for i in n_active:
         tmp = dat_m[dat_m[:,1:-2:2].sum(axis=1)+1==i, 1:-2:2]
         tmp = jnp.hstack((tmp, jnp.ones(tmp.shape[0], dtype=jnp.int8).reshape(-1,1)))
-        lik, th_, dp_, dm_ = vmap(ssr._grad_met_obs, (None, None, None, 0, None), out_axes=(0))(log_theta, log_d_p, log_d_m, tmp, int(i))
+        lik, th_, dp_, dm_ = vmap(ssr._grad_met_obs, (None, None, None, 0, None), out_axes=(0))(theta_rep, log_d_p, log_d_m, tmp, int(i))
         for j in range(len(lik)):
             grad_rep_list.append(th_[j])
             grad_dp_list.append(dp_[j])
@@ -718,21 +746,21 @@ def score_and_grad(log_theta: jnp.ndarray, log_d_p: jnp.ndarray, log_d_m: jnp.nd
         order = dat_c[i,-2]
         if order == 0:
             if (n_prim + n_met-1) == 1:
-                s, th_, d_p_, d_m_ = one._g_coupled_0(log_theta, log_d_p, log_d_m, state_obs)
+                s, th_, d_p_, d_m_ = one._g_coupled_0(theta_rep, log_d_p, log_d_m, state_obs)
             else:
-                s, th_, d_p_, d_m_ = ssr._g_coupled_0(log_theta, log_d_p, log_d_m, state_obs,
+                s, th_, d_p_, d_m_ = ssr._g_coupled_0(theta_rep, log_d_p, log_d_m, state_obs,
                                                         n_prim, n_met)
         elif order == 1:
             if (n_prim + n_met-1) == 1:
-                s, th_, d_p_, d_m_ = one._g_coupled_1(log_theta, log_d_p, log_d_m, state_obs)
+                s, th_, d_p_, d_m_ = one._g_coupled_1(theta_rep, log_d_p, log_d_m, state_obs)
             else:
-                s, th_, d_p_, d_m_ = ssr._g_coupled_1(log_theta, log_d_p, log_d_m, state_obs,
+                s, th_, d_p_, d_m_ = ssr._g_coupled_1(theta_rep, log_d_p, log_d_m, state_obs,
                                                         n_prim, n_met)
         else:
             if (n_prim + n_met-1) == 1:
-                s, th_, d_p_, d_m_ = one._g_coupled_2(log_theta, log_d_p, log_d_m, state_obs)
+                s, th_, d_p_, d_m_ = one._g_coupled_2(theta_rep, log_d_p, log_d_m, state_obs)
             else:
-                s, th_, d_p_, d_m_ = ssr._g_coupled_2(log_theta, log_d_p, log_d_m, state_obs,
+                s, th_, d_p_, d_m_ = ssr._g_coupled_2(theta_rep, log_d_p, log_d_m, state_obs,
                                                       n_prim, n_met)
         grad_rep_list.append(th_)
         grad_dp_list.append(d_p_)
@@ -745,12 +773,15 @@ def score_and_grad(log_theta: jnp.ndarray, log_d_p: jnp.ndarray, log_d_m: jnp.nd
 
     n_em = jnp.sum(dat[:,-3])
     n_nm = dat.shape[0] - n_em
+
     if n_em*n_nm != 0:
         w = perc_met * n_nm/((1-perc_met)*n_em)
     else:
         w = 1
+
     n_full = w*n_em + n_nm
     score = (w*score + score_pt)/n_full
+
     d_th = (w*d_th + d_th_pt)/n_full
     d_d_p = (w*d_d_p + d_d_p_pt)/n_full
     d_d_m = w*d_d_m/n_full
@@ -815,11 +846,10 @@ def score_and_grad_reg(params: np.ndarray, dat: jnp.ndarray, perc_met: float, pe
     n_mut = (dat.shape[1]-3)//2
     n_total = n_mut + 1
     # Transfer parameters to the device
-    log_theta = jnp.array(params[0:n_total**2]).reshape((n_total, n_total))
     log_d_p = jnp.array(params[n_total**2:n_total*(n_total + 1)])
     log_d_m = jnp.array(params[n_total*(n_total+1):])
     theta_extended = create_Theta_extended_from_flat_params(params, n_total)
-    score, grad_list = score_and_grad(log_theta, log_d_p, log_d_m, dat, perc_met, theta_extended, fixed_grad)
+    score, grad_list = score_and_grad(log_d_p, log_d_m, dat, perc_met, theta_extended, fixed_grad)
     # Sum the gradients
     grad_theta_g_total = sum(g.grad_theta_g for g in grad_list)
     grad_theta_met_br_total = sum(g.grad_theta_met_br for g in grad_list)
@@ -831,14 +861,12 @@ def score_and_grad_reg(params: np.ndarray, dat: jnp.ndarray, perc_met: float, pe
     grad_omega_m_total = sum(g.grad_omega_m for g in grad_list)
     grad_vec = jnp.concatenate([
         grad_theta_g_total.flatten(),
-        grad_theta_met_br_total.flatten(),
+        jnp.atleast_1d(grad_theta_met_br_total),
         grad_theta_gm_total.flatten(),
         grad_theta_mg_total.flatten(),
-        grad_theta_loc_gm_total.flatten(),
-        grad_theta_loc_mg_total.flatten(),
         grad_omega_g_total,
-        grad_omega_m_total.flatten(),
-    ])
+        grad_omega_m_total[:, 0],
+])
     pen, pen_ = penal(params, n_total)
     return np.array(-score + w_penal*pen), -grad_vec + w_penal*pen_ 
 
@@ -870,11 +898,25 @@ def learn_mhn(th_init: jnp.ndarray, dp_init: jnp.ndarray, dm_init: jnp.ndarray, 
         tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]: Estimated log. theta, log. d_p, log. d_m
     """
     n_total = th_init.shape[0]
-    start_params = np.concatenate((th_init.flatten(), dp_init, dm_init))
+    theta_g = th_init[:-1, :-1]
+    theta_met_br = jnp.array([th_init[-1, -1]])
+    theta_gm = th_init[-1, :-1]
+    theta_mg = th_init[:-1, -1]
+
+    start_params = np.concatenate([
+        theta_g.flatten(),
+        theta_met_br,
+        theta_gm,
+        theta_mg,
+        dp_init,
+        dm_init
+    ])
     x = opt.minimize(fun=score_and_grad_reg, jac=True, x0=start_params, method="L-BFGS-B",  
                      args=(dat, perc_met, penal, w_penal, fixed_grad), 
                      options={"maxiter":opt_iter, "disp": opt_v, "ftol": opt_ftol})
-    theta = jnp.array(x.x[:n_total**2]).reshape((n_total, n_total))
-    d_p = jnp.array(x.x[n_total**2:n_total*(n_total+1)])
-    d_m = jnp.array(x.x[n_total*(n_total+1):])
+    theta_extended = create_Theta_extended_from_flat_params(x.x, n_total)
+    theta = reparametrization(theta_extended)[0]
+    d_p = theta_extended.omega_g
+    d_m = theta_extended.omega_m[:, 0]
+
     return theta, d_p, d_m
